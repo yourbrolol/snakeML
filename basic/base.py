@@ -57,4 +57,5 @@ class Linear(Layer):
         self.input = input_data
         return self.input @ self.params['w'] + self.params['b']
     def backward(self, output_grad):
-        pass
+        self.params['w'] -= output_grad * self.input
+        self.params['b'] -= output_grad
