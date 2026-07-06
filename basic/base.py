@@ -52,9 +52,9 @@ class Linear(Layer):
     def __init__(self, input_dim, output_dim):
         super().__init__()
         self.params['w'] = Vector([0.1] * input_dim)
-        self.params['b'] = Vector(0.1)
+        self.params['b'] = Vector([0.1])
     def forward(self, input_data):
-        self.input = input_data
+        self.input = Vector(input_data)
         return self.input @ self.params['w'] + self.params['b']
     def backward(self, output_grad):
         self.params['w'] -= output_grad * self.input
