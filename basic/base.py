@@ -46,7 +46,7 @@ class Layer():
         self.grads = {}
         self.input = None
     def forward(self, input_data): raise NotImplementedError
-    def backward(self, output_gradient): raise NotImplementedError
+    def backward(self, output_grad): raise NotImplementedError
 
 class Linear(Layer):
     def __init__(self, input_dim, output_dim):
@@ -56,3 +56,5 @@ class Linear(Layer):
     def forward(self, input_data):
         self.input = input_data
         return self.input @ self.params['w'] + self.params['b']
+    def backward(self, output_grad):
+        pass
