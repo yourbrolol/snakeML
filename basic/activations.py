@@ -1,12 +1,20 @@
-class Activation:
-    def __init__(self, name, fn, grad):
+from basic.layers import Layer
+
+class Activation(Layer):
+    def __init__(self, name):
+        super().__init__()
         self.name = name
-        self.fn = fn
-        self.grad = grad
+    def forward(self, x): raise NotImplementedError
+    def backward(self, x): raise NotImplementedError
 
 class LinearActivation(Activation):
-    def __init__(self): super().__init__("LinearActivation", lambda x: x, lambda x: x)
+    def __init__(self):
+        super().__init__("LinearActivation")
+    def forward(self, x): return x
+    def backward(self, x): return x
 
 class ReLU(Activation):
     def __init__(self):
-        super().__init__("ReLU", lambda x: x if x>0 else 0, lambda x: 0 if x==0 else 1)
+        super().__init__("ReLU")
+    def forward(self, x): return max(0, x)
+    def backward(self, x): return 0 if x <= 0 else 1
