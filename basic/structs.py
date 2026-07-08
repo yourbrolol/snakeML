@@ -116,6 +116,13 @@ class Array:
 
         else:
             raise NotImplementedError("Dot product only implemented for up to 2 dimensions.")
+    
+    # Outer product
+
+    def outer(self, other):
+        if not isinstance(other, Array): raise NotImplementedError("Outer product only implemented for Array and Array.")
+        if self.ndim != other.ndim: raise NotImplementedError("Outer product only implemented for same length Arrays.")
+        return Array([[i*j for j in other] for i in self])
 
     # Operator overload for python's matrix multiplication operator (@)
     def __matmul__(self, other):
@@ -156,3 +163,8 @@ class Array:
     # --- Representation ---
     def __repr__(self):
         return f"Array({self.data})"
+
+if __name__ == "__main__":
+    u = Array([1,2,3])
+    v = Array([4,5])
+    print(u.outer(v))
