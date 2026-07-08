@@ -65,6 +65,15 @@ class Array:
     def __truediv__(self, other): return self._elementwise(other, lambda x, y: x / y)
     def __rtruediv__(self, other): return self._elementwise(other, lambda x, y: y / x)
 
+    # --- Comparison Operators ---
+    def __gt__(self, other):
+        """Element-wise greater than (>). Supports Array vs Array and Array vs int/float."""
+        return self._elementwise(other, lambda x, y: x > y)
+
+    def __lt__(self, other):
+        """Element-wise less than (<). Supports Array vs Array and Array vs int/float."""
+        return self._elementwise(other, lambda x, y: x < y)
+
     # --- Dot Product / Matrix Multiplication ---
     def dot(self, other):
         """
