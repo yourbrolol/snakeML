@@ -1,9 +1,11 @@
 from basic.layers import Layer
+from basic.structs import Array
 
 class Activation(Layer):
     def __init__(self, name):
         super().__init__()
         self.name = name
+        self.input = None
     def forward(self, x): raise NotImplementedError
     def backward(self, x): raise NotImplementedError
 
@@ -16,5 +18,9 @@ class LinearActivation(Activation):
 class ReLU(Activation):
     def __init__(self):
         super().__init__("ReLU")
-    def forward(self, x): return max(0, x)
-    def backward(self, x): return 0 if x <= 0 else 1
+    def forward(self, x):
+        self.input = x
+        out = max(0, x)
+        return out if isinstance(out, Array) else Array([out])
+    def backward(self, grad):
+        return grad * (self.input > 0)

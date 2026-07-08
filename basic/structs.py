@@ -67,12 +67,17 @@ class Array:
 
     # --- Comparison Operators ---
     def __gt__(self, other):
-        """Element-wise greater than (>). Supports Array vs Array and Array vs int/float."""
         return self._elementwise(other, lambda x, y: x > y)
 
     def __lt__(self, other):
-        """Element-wise less than (<). Supports Array vs Array and Array vs int/float."""
         return self._elementwise(other, lambda x, y: x < y)
+    
+    def __ge__(self, other):
+        return self._elementwise(other, lambda x, y: x >= y)
+
+    def __le__(self, other):
+        return self._elementwise(other, lambda x, y: x <= y)
+
 
     # --- Dot Product / Matrix Multiplication ---
     def dot(self, other):
@@ -117,6 +122,24 @@ class Array:
         else:
             raise NotImplementedError("Dot product only implemented for up to 2 dimensions.")
     
+    # Transposition
+
+    @property
+    def T(self):
+        return self.transpose()
+    
+    def transpose(self):
+        if self.ndim != 2:
+            raise ValueError("transpose is only defined for 2D arrays")
+
+        rows = len(self.data)
+        cols = len(self.data[0])
+
+        return Array([
+            [self.data[r][c] for r in range(rows)]
+            for c in range(cols)
+        ])
+
     # Outer product
 
     def outer(self, other):

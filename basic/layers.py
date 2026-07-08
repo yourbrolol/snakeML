@@ -15,9 +15,17 @@ class Linear(Layer):
         self.params['b'] = Array([0.1] * output_dim)
     def forward(self, input_data):
         self.input = Array(input_data) if not isinstance(input_data, Array) else input_data
-        print("cur", self.input, self.params['w'], self.params['b'], self.params['w'].ndim, self.input.ndim)
-        print("res", ((self.params['w'].dot(self.input)) + self.params['b']))
-        return (self.params['w'].dot(self.input)) + self.params['b']
-    def backward(self, output_grad):
-        self.params['w'] -= self.input.outer(output_grad)
-        self.params['b'] -= output_grad
+        print("Input: ", self.input, self.params['w'], self.params['b'], self.params['w'].ndim, self.input.ndim)
+        out = (self.params['w'].dot(self.input)) + self.params['b']
+        print("Output: ", out)
+        return out
+    def update(self):
+        self.params['w'] -= self.grads['w']
+        self.params['b'] -= self.grads['b']
+    def backward(self, loss_grad):
+        grad = Array(loss_grad) if not isinstance(loss_grad, Array) else loss_grad
+        self.grads['w'] = grad.outer(self.input)
+        self.grads['b'] = grad
+        print(self.input, grad, self.grads, self.params)
+        self.update()
+        return self.params['w'].T.dot(grad)
