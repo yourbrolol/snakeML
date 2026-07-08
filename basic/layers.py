@@ -19,5 +19,5 @@ class Linear(Layer):
         print("res", ((self.params['w'].dot(self.input)) + self.params['b']))
         return (self.params['w'].dot(self.input)) + self.params['b']
     def backward(self, output_grad):
-        self.params['w'] -= output_grad * self.input
+        self.params['w'] -= self.input.outer(output_grad)
         self.params['b'] -= output_grad
