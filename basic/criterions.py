@@ -9,5 +9,5 @@ class Loss:
 class MSE(Loss):
     def __init__(self):
         super().__init__("MSELoss")
-    def forward(self, y_pred, y_true): return (1/2) * (Array([y_pred] if not isinstance(y_pred, Array) else y_pred)-Array([y_true]))**2
-    def backward(self, y_pred, y_true): return ((Array([y_pred]) if not isinstance(y_pred, Array)else y_pred) - Array([y_true]))
+    def forward(self, y_pred, y_true): return (1/2) * (y_pred)-(Array(y_true) if not isinstance(y_true, Array) else y_true)**2
+    def backward(self, y_pred, y_true): return (y_pred) - (Array(y_true) if not isinstance(y_true, Array) else y_true) 
