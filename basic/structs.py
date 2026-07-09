@@ -166,6 +166,12 @@ class Array:
         result = self.data[index]
         return Array(result) if isinstance(result, list) else result
 
+    def __setitem__(self, key, value):
+        if isinstance(key, tuple):
+            target = self.data
+            for idx in key[:-1]: target = target[idx]
+            target[key[-1]] = value
+
     # --- Statistics (Using standard math functions) ---
     def sum(self):
         """Returns the sum of all elements."""
