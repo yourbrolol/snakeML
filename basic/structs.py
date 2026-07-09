@@ -155,22 +155,23 @@ class Array:
         return self._elementwise(other, lambda x, y: x ** y)
 
     # --- Indexing and Slicing ---
-    def __getitem__(self, index):
-        """Allows 1D and multi-dimensional indexing/slicing."""
-        if isinstance(index, tuple):
-            result = self.data
-            for idx in index:
-                result = result[idx]
-            return Array(result) if isinstance(result, list) else result
-        
-        result = self.data[index]
-        return Array(result) if isinstance(result, list) else result
+    @staticmethod
+    def _normalize_key(key):
+        if not isinstance(key, tuple): return (key,)
+        return key
 
-    def __setitem__(self, key, value):
-        if isinstance(key, tuple):
-            target = self.data
-            for idx in key[:-1]: target = target[idx]
-            target[key[-1]] = value
+    def __getitem__(self, _index):
+        key = self._normalize_key(_index)
+        """Allows 1D and multi-dimensional indexing/slicing."""
+        result = self.data
+        for idx in key: result = result[idx]
+        return Array(result) if isinstance(result, list) else result
+        
+    def __setitem__(self, _key, value):
+        key = self._normalize_key(_key)
+        target = self.data
+        for idx in key[:-1]: target = target[idx]
+        target[key[-1]] = value
 
     # --- Statistics (Using standard math functions) ---
     def sum(self):
