@@ -80,15 +80,6 @@ class Array:
                 raise ValueError(f"Shapes {self.shape} and {other.shape} not aligned.")
             return sum(a * b for a, b in zip(self.data, other.data))
 
-        # 2D Array . 1D Array -> returns 1D Array
-        elif self.ndim == 2 and other.ndim == 1:
-            if self.shape[1] != other.shape[0]:
-                raise ValueError(f"Shapes {self.shape} and {other.shape} not aligned.")
-            result = []
-            for row in self.data:
-                result.append(sum(r * v for r, v in zip(row, other.data)))
-            return Array(result)
-
         else:
             raise NotImplementedError("Dot product only implemented for up to 2 dimensions.")
     
@@ -182,6 +173,5 @@ if __name__ == "__main__":
     ])
     b = Array([
         [5,6],
-        [7,8]
     ])
-    print((linalg.matmul(a,b)))
+    print((linalg.matvec(a,b)))

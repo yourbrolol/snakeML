@@ -10,6 +10,14 @@ def transpose(array):
         for c in range(cols)
     ]
 
+def matvec(a, b):
+    if a.shape[1] != b.shape[1]: raise ValueError(f"Shapes {a.shape} and {b.shape} not aligned.")
+    
+    result = []
+    for row in a:
+        result.append(sum(r * v for r, v in zip(row, b)))
+    return result
+
 def matmul(a, b):
     if (a.ndim or b.ndim) != 2: raise NotImplementedError(f"A: {a.ndim} or B: {b.ndim} is not a matrice!")
     if a.shape[1] != b.shape[0]: raise ValueError(f"Shapes {a.shape} and {b.shape} not aligned.")
