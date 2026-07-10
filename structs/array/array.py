@@ -89,22 +89,6 @@ class Array:
                 result.append(sum(r * v for r, v in zip(row, other.data)))
             return Array(result)
 
-        # 2D Array . 2D Array -> returns 2D Array
-        elif self.ndim == 2 and other.ndim == 2:
-            if self.shape[1] != other.shape[0]:
-                raise ValueError(f"Shapes {self.shape} and {other.shape} not aligned.")
-            
-            # Transpose 'other' to easily grab its columns as rows
-            other_cols = list(zip(*other.data))
-            
-            result = []
-            for row in self.data:
-                new_row = []
-                for col in other_cols:
-                    new_row.append(sum(r * c for r, c in zip(row, col)))
-                result.append(new_row)
-            return Array(result)
-
         else:
             raise NotImplementedError("Dot product only implemented for up to 2 dimensions.")
     
@@ -116,7 +100,7 @@ class Array:
     def outer(self, other): return Array(linalg.outer(self, other))
     
     # --- Operator overload ---
-    def __matmul__(self, other): return self.dot(other)
+    def __matmul__(self, other): return Array(linalg.matmul(other))
     
     def __pow__(self, other): return self._elementwise(other, lambda x, y: x ** y)
 
@@ -192,10 +176,12 @@ class Array:
         return f"Array({self.data})"
 
 if __name__ == "__main__":
-    arr = Array([
-        [1,2,3],
-        [4,5,6],
-        [7,8,9]
+    a = Array([
+        [1,2],
+        [3,4]
     ])
-    arr[0:2, 1] = 4
-    print(arr[0:2, 1])
+    b = Array([
+        [5,6],
+        [7,8]
+    ])
+    print((linalg.matmul(a,b)))

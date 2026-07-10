@@ -11,4 +11,3 @@ def elementwise(a, b, op):
         return [elementwise(item_a, b, op) for item_a in a]
     if isinstance(b, list):
         return [elementwise(a, item_b, op) for item_b in b]
-
