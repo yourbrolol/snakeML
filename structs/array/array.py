@@ -67,24 +67,9 @@ class Array:
     # --- Lenght ---
     def __len__(self): return len(self.data)
 
-    # --- Dot Product / Matrix Multiplication ---
-    def dot(self, other):
-        """
-        Computes the dot product of two arrays.
-        Supports 1D/1D, 2D/1D, and 2D/2D operations.
-        """
-        if not isinstance(other, Array):
-            raise TypeError("Dot product requires another Array instance.")
+    # --- Dot Product ---
+    def dot(self, other): return Array(linalg.tensordot(self, other, axes=1))
 
-        # 1D Array . 1D Array -> returns scalar float/int
-        if self.ndim == 1 and other.ndim == 1:
-            if self.shape[0] != other.shape[0]:
-                raise ValueError(f"Shapes {self.shape} and {other.shape} not aligned.")
-            return sum(a * b for a, b in zip(self.data, other.data))
-
-        else:
-            raise NotImplementedError("Dot product only implemented for up to 2 dimensions.")
-    
     # --- Transposition ---
     @property
     def T(self): return Array(linalg.transpose(self))
@@ -97,7 +82,7 @@ class Array:
     def outer(self, other): return Array(linalg.outer(self, other))
     
     # --- Operator overload ---
-    def __matmul__(self, other): return Array(linalg.matmul(other))
+    def __matmul__(self, other): return Array(linalg.matmul(self, other))
     
     def __pow__(self, other): return self._elementwise(other, lambda x, y: x ** y)
 
