@@ -83,17 +83,14 @@ def matvec(a, b):
     return result
 
 def matmul(a, b):
-    # Prepare data and shapes via broadcasting function
     a_data, b_data, squeeze_type = broadcast(a, b)
     
-    # Simple, strict 2D shape alignment validation
     a_rows, a_cols = len(a_data), len(a_data[0]) if len(a_data) > 0 else 0
     b_rows, b_cols_count = len(b_data), len(b_data[0]) if len(b_data) > 0 else 0
 
     if a_cols != b_rows:
         raise ValueError(f"Matrix shapes not aligned: {a_cols} != {b_rows}")
 
-    # Core 2D matrix multiplication kernel
     b_cols = list(zip(*b_data))
     result = []
     for row in a_data:
@@ -102,7 +99,6 @@ def matmul(a, b):
             new_row.append(sum(r * c for r, c in zip(row, col)))
         result.append(new_row)
 
-    # Post-processing: Squeeze output back based on the broadcast instructions
     if squeeze_type == 'scalar':
         return result[0][0]
     if squeeze_type == 'column':
