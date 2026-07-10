@@ -1,4 +1,4 @@
-from structs import (linalg, stats)
+from structs import (broadcasting, linalg, stats)
 
 class Array:
     def __init__(self, values):
@@ -37,21 +37,8 @@ class Array:
     # --- Element-wise Operations Helper ---
     def _elementwise(self, other, op):
         """Applies a math operator element-wise between self and another Array/scalar."""
-        def _apply(a, b):
-            if not isinstance(a, list) and not isinstance(b, list):
-                return op(a, b)
-            if isinstance(a, list) and isinstance(b, list):
-                if len(a) != len(b):
-                    raise ValueError("Operands could not be broadcast together due to shape mismatch.")
-                return [_apply(item_a, item_b) for item_a, item_b in zip(a, b)]
-            # Broadcasting scalar
-            if isinstance(a, list):
-                return [_apply(item_a, b) for item_a in a]
-            if isinstance(b, list):
-                return [_apply(a, item_b) for item_b in b]
-
         other_data = other.data if isinstance(other, Array) else other
-        return Array(_apply(self.data, other_data))
+        return Array(broadcasting.elementwise(self.data, other_data, op))
 
     # --- Math Operators ---
     def __add__(self, other): return self._elementwise(other, lambda x, y: x + y)
