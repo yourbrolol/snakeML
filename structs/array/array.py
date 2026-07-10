@@ -1,4 +1,4 @@
-import math
+import mathf
 
 class Array:
     def __init__(self, values):
@@ -21,7 +21,8 @@ class Array:
             return (0,)
         return (len(data),) + self._get_shape(data[0])
 
-    def _flatten(self, data):
+    def _flatten(self, array=None):
+        data = array or self.data
         """Helper to flatten the multi-dimensional list."""
         if not isinstance(data, list):
             yield data
@@ -147,7 +148,7 @@ class Array:
         if self.ndim != other.ndim: raise NotImplementedError("Outer product only implemented for same length Arrays.")
         return Array([[i*j for j in other] for i in self])
 
-    # Operator overload for python's matrix multiplication operator (@)
+    # --- Operator overload ---
     def __matmul__(self, other):
         return self.dot(other)
     
@@ -156,36 +157,36 @@ class Array:
 
     # --- Indexing and Slicing ---
     def _normalize_key(self, _key):
-        key = _key
-        if not isinstance(key, tuple): key = (key,)
+        key = _key if isinstance(_key, tuple) else (_key,)
+        
+        if key.count(Ellipsis) > 1:
+            raise IndexError("__getitem__ should at most contain one Ellipsis (...)!")
+            
         cleaned = []
-        hasEllipsis = False
         for idx in key:
-            if not isinstance(idx, type(Ellipsis)):
-                cleaned.append(idx)
+            if idx is Ellipsis:
+                pad_count = self.ndim - (len(key) - 1)
+                cleaned.extend([slice(None)] * pad_count)
             else:
-                if hasEllipsis == True: raise IndexError("__getitem__ should at most contain one Ellipsis (...)!")
-                hasEllipsis = True
-                n = self.ndim - len(key) - 1
-                for _ in range(n): cleaned.append(slice(None))
-        return key
-
+                cleaned.append(idx)
+                
+        return tuple(cleaned)
+    
     def __getitem__(self, _index):
         key = self._normalize_key(_index)
         result = self.data
+        
         for idx in key:
             if isinstance(idx, slice):
-                start, stop, step = idx.start, idx.stop, idx.step
-                if idx.start == None: start = 0
-                if idx.stop == None: stop = len(result)
-                if idx.step == None: step = 1
-                result = result[start:stop:step]
+                result = result[idx]
             elif isinstance(idx, int):
-                if isinstance(result[0], list):
-                    result = [i[idx] for i in result]
-                else: result = result[idx]
+                if result and isinstance(result[0], list):
+                    result = [row[idx] for row in result]
+                else:
+                    result = result[idx]
+                    
         return Array(result) if isinstance(result, list) else result
-    
+
     def _setitem(self, key, value, target):
         if len(key) == 1:
             k = key[0]
@@ -209,24 +210,14 @@ class Array:
         key = self._normalize_key(_key)
         parent = self.data
         self._setitem(key, value, parent)
+    
+    # --- Statistics ---
+    def sum(self): return mathf.sum(self._flatten())
+    
+    def mean(self): return mathf.mean(self._flatten())
 
-    # --- Statistics (Using standard math functions) ---
-    def sum(self):
-        """Returns the sum of all elements."""
-        return sum(self._flatten(self.data))
-
-    def mean(self):
-        """Returns the mean of all elements."""
-        flat = list(self._flatten(self.data))
-        return sum(flat) / len(flat)
-
-    def std(self):
-        """Returns the standard deviation of all elements."""
-        flat = list(self._flatten(self.data))
-        m = self.mean()
-        variance = sum((x - m) ** 2 for x in flat) / len(flat)
-        return math.sqrt(variance)
-
+    def std(self): return mathf.std(self._flatten())
+    
     # --- Representation ---
     def __repr__(self):
         return f"Array({self.data})"
