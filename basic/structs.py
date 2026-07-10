@@ -155,23 +155,60 @@ class Array:
         return self._elementwise(other, lambda x, y: x ** y)
 
     # --- Indexing and Slicing ---
-    @staticmethod
-    def _normalize_key(key):
-        if not isinstance(key, tuple): return (key,)
+    def _normalize_key(self, _key):
+        key = _key
+        if not isinstance(key, tuple): key = (key,)
+        cleaned = []
+        hasEllipsis = False
+        for idx in key:
+            if not isinstance(idx, type(Ellipsis)):
+                cleaned.append(idx)
+            else:
+                if hasEllipsis == True: raise IndexError("__getitem__ should at most contain one Ellipsis (...)!")
+                hasEllipsis = True
+                n = self.ndim - len(key) - 1
+                for _ in range(n): cleaned.append(slice(None))
         return key
 
     def __getitem__(self, _index):
         key = self._normalize_key(_index)
-        """Allows 1D and multi-dimensional indexing/slicing."""
         result = self.data
-        for idx in key: result = result[idx]
+        for idx in key:
+            if isinstance(idx, slice):
+                start, stop, step = idx.start, idx.stop, idx.step
+                if idx.start == None: start = 0
+                if idx.stop == None: stop = len(result)
+                if idx.step == None: step = 1
+                result = result[start:stop:step]
+            elif isinstance(idx, int):
+                if isinstance(result[0], list):
+                    result = [i[idx] for i in result]
+                else: result = result[idx]
         return Array(result) if isinstance(result, list) else result
-        
+    
+    def _setitem(self, key, value, target):
+        if len(key) == 1:
+            k = key[0]
+            if isinstance(k, slice):
+                target[k] = value if isinstance(value, list) else [value]
+            else:
+                target[k] = value
+            return
+
+        head, tail = key[0], key[1:]
+
+        if isinstance(head, slice):
+            children = target[head]
+            for i, child in enumerate(children):
+                sub_val = value[i] if isinstance(value, list) and i < len(value) else value
+                self._setitem(tail, sub_val, child)
+        else:
+            self._setitem(tail, value, target[head])
+
     def __setitem__(self, _key, value):
         key = self._normalize_key(_key)
-        target = self.data
-        for idx in key[:-1]: target = target[idx]
-        target[key[-1]] = value
+        parent = self.data
+        self._setitem(key, value, parent)
 
     # --- Statistics (Using standard math functions) ---
     def sum(self):
@@ -195,6 +232,10 @@ class Array:
         return f"Array({self.data})"
 
 if __name__ == "__main__":
-    u = Array([1,2,3])
-    v = Array([4,5])
-    print(u.outer(v))
+    arr = Array([
+        [1,2,3],
+        [4,5,6],
+        [7,8,9]
+    ])
+    arr[0:2, 1] = 4
+    print(arr[0:2, 1])
