@@ -1,4 +1,4 @@
-from structs import (broadcasting, linalg, stats)
+from structs import (broadcasting, linalg, stats, utils)
 
 class Array:
     def __init__(self, values):
@@ -20,6 +20,8 @@ class Array:
         if not data:
             return (0,)
         return (len(data),) + self._get_shape(data[0])
+
+    def _indices(self): utils.indices(self.shape)
 
     def _flatten(self, array=None):
         data = array or self.data
