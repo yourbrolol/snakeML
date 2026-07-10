@@ -87,7 +87,11 @@ class Array:
     @property
     def T(self): return Array(linalg.transpose(self))
     
-    # --- Outer product ---
+    # --- Linear algebra ---
+    def matvec(self, other): return Array(linalg.matvec(self, other))
+    
+    def matmul(self, other): return Array(linalg.matmul(self, other))
+
     def outer(self, other): return Array(linalg.outer(self, other))
     
     # --- Operator overload ---
