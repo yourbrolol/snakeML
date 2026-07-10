@@ -1,4 +1,4 @@
-from basic.structs import Array
+from structs import Array
 
 class Layer():
     def __init__(self):

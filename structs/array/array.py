@@ -1,4 +1,4 @@
-import mathf
+from structs import (stats)
 
 class Array:
     def __init__(self, values):
@@ -212,11 +212,11 @@ class Array:
         self._setitem(key, value, parent)
     
     # --- Statistics ---
-    def sum(self): return mathf.sum(self._flatten())
+    def sum(self): return stats.sum(self._flatten())
     
-    def mean(self): return mathf.mean(self._flatten())
+    def mean(self): return stats.mean(self._flatten())
 
-    def std(self): return mathf.std(self._flatten())
+    def std(self): return stats.std(self._flatten())
     
     # --- Representation ---
     def __repr__(self):

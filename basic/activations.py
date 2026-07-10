@@ -1,5 +1,5 @@
 from basic.layers import Layer
-from basic.structs import Array
+from structs import Array
 
 class Activation(Layer):
     def __init__(self, name):
