@@ -1,3 +1,5 @@
+from . import (indexing)
+
 from structs import (broadcasting, linalg, stats, utils)
 
 class Array:
@@ -86,65 +88,12 @@ class Array:
     
     def __pow__(self, other): return self._elementwise(other, lambda x, y: x ** y)
 
-    # --- Indexing and Slicing ---
-    def _normalize_key(self, _key):
-        key = _key if isinstance(_key, tuple) else (_key,)
-        
-        if key.count(Ellipsis) > 1:
-            raise IndexError("__getitem__ should at most contain one Ellipsis (...)!")
-            
-        cleaned = []
-        for idx in key:
-            if idx is Ellipsis:
-                pad_count = self.ndim - (len(key) - 1)
-                cleaned.extend([slice(None)] * pad_count)
-            else:
-                cleaned.append(idx)
-                
-        return tuple(cleaned)
-    
-    def _getitem(self, target, key):
-        if not key:
-            return target
+    # --- Indexing and Slicing --- 
+    def __getitem__(self, key):
+        result = indexing._getitem(self, key)
+        return Array(result) if not isinstance(result, Array) else result
 
-        head, *tail = key
-
-        if isinstance(head, int):
-            return self._getitem(target[head], tail)
-
-        if isinstance(head, slice):
-            return [self._getitem(item, tail) for item in target[head]]
-
-        raise TypeError(f"Unsupported index type: {type(head).__name__}")
-
-    def __getitem__(self, _key):
-        key = self._normalize_key(_key)
-        result = self._getitem(self.data, key)
-        return Array(result) if isinstance(result, list) else result
-    
-    def _setitem(self, key, value, target):
-        if len(key) == 1:
-            k = key[0]
-            if isinstance(k, slice):
-                target[k] = value if isinstance(value, list) else [value]
-            else:
-                target[k] = value
-            return
-
-        head, tail = key[0], key[1:]
-
-        if isinstance(head, slice):
-            children = target[head]
-            for i, child in enumerate(children):
-                sub_val = value[i] if isinstance(value, list) and i < len(value) else value
-                self._setitem(tail, sub_val, child)
-        else:
-            self._setitem(tail, value, target[head])
-
-    def __setitem__(self, _key, value):
-        key = self._normalize_key(_key)
-        parent = self.data
-        self._setitem(key, value, parent)
+    def __setitem__(self, key, value): indexing._setitem(self, key, value)
     
     # --- Statistics ---
     def sum(self): return stats.sum(self._flatten())
