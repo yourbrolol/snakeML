@@ -8,7 +8,12 @@ class Array:
         self.data = self._to_list(values)
         self.shape = self._get_shape(self.data)
         self.ndim = len(self.shape)
-        
+    
+    @staticmethod
+    def wraparray(value):
+        """Return value as an Array, avoiding double-wrapping."""
+        return value if isinstance(value, Array) else Array(value)
+
     def _to_list(self, values):
         """Converts inputs (tuples, generators) into standard lists."""
         if isinstance(values, (list, tuple)):

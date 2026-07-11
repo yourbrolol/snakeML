@@ -12,16 +12,23 @@ def _normalize_key(ndim, _key):
         else:
             cleaned.append(idx)
             
+    if len(cleaned) < ndim:
+        cleaned.extend([slice(None)] * (ndim - len(cleaned)))
+        
     return tuple(cleaned)
 
 def _getitem(array, _key, target=None, depth=0):
-    key = _key
-    if depth == 0: key = _normalize_key(array.ndim, _key)
+    if depth == 0: 
+        key = _normalize_key(array.ndim, _key)
+    else:
+        key = _key
+        
     target = array.data if target is None else target
-    if not key: return target
+    
+    if not key: 
+        return target
     
     head, *tail = key
-    print("DEBUG", head, tail, target[head])
 
     if isinstance(head, int):
         return _getitem(array, tail, target[head], depth+1)
