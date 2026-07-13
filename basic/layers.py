@@ -1,4 +1,4 @@
-from basic.structs import Array
+from structs import Array
 
 class Layer():
     def __init__(self):
@@ -16,7 +16,8 @@ class Linear(Layer):
     def forward(self, input_data):
         self.input = Array(input_data) if not isinstance(input_data, Array) else input_data
         # print("Input: ", self.input, self.params['w'], self.params['b'], self.params['w'].ndim, self.input.ndim)
-        out = (self.params['w'].dot(self.input)) + self.params['b']
+        print(self.params['w'].shape, self.input.shape)
+        out = (self.params['w'].matmul(self.input)) + self.params['b']
         # print("Output: ", out)
         return out
     def update(self):
@@ -27,4 +28,4 @@ class Linear(Layer):
         self.grads['w'] = grad.outer(self.input)
         self.grads['b'] = grad
         # print(self.input, grad, self.grads, self.params)
-        return self.params['w'].T.dot(grad)
+        return self.params['w'].T.matmul(grad)
