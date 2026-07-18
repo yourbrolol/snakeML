@@ -26,8 +26,6 @@ def elementwise(a, b, op):
     if not isinstance(a, list) and not isinstance(b, list):
         return op(a, b)
     if isinstance(a, list) and isinstance(b, list):
-        if len(a) != len(b):
-            raise ValueError("Operands could not be broadcast together due to shape mismatch.")
         return [elementwise(item_a, item_b, op) for item_a, item_b in zip(a, b)]
     # Broadcasting scalar
     if isinstance(a, list):

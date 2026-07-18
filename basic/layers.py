@@ -28,5 +28,13 @@ class Linear(Layer):
         return self.params['w'].T.matmul(grad)
 
 class Conv2D(Layer):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, kernel):
         super().__init__()
+        self.params['w'] = Array([[0.1] * kernel[1]] * kernel[0] for _ in range(output_dim))
+        self.params['b'] = Array([0.1] * output_dim)
+    def forward(self, input):
+        pass
+
+if __name__ == "__main__":
+    w = Array([[0,1], [1,0]] for _ in range(3))
+    for i in w: print(i)

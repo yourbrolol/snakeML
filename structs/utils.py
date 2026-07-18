@@ -9,7 +9,11 @@ def build_index(ndim, *groups):
 
     return tuple(idx)
 
-def indices(shape): yield from product(*(range(s) for s in shape)) if shape != () else ()
+def indices(shape):
+    if shape == ():
+        yield ()
+    else:
+        yield from product(*(range(s) for s in shape))
 
 def zeroes(shape):
     if len(shape) == 0:
@@ -18,6 +22,8 @@ def zeroes(shape):
     return [zeroes(shape[1:]) for _ in range(shape[0])]
 
 def set_nested(lst, idx, value):
+    if not idx:
+        return value
     for i in idx[:-1]:
         lst = lst[i]
     lst[idx[-1]] = value
