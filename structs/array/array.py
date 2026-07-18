@@ -99,7 +99,7 @@ class Array:
             yield self[i]
 
     # --- Dot Product ---
-    def dot(self, other): return self._wrap_result(linalg.tensordot(self, other, axes=1))
+    def dot(self, other, axes=1): return self._wrap_result(linalg.tensordot(self, other, axes=axes))
 
     # --- Transposition ---
     @property

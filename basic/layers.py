@@ -33,9 +33,23 @@ class Conv2D(Layer):
         self.params['w'] = Array([[0.1] * kernel[1]] * kernel[0] for _ in range(output_dim))
         self.params['b'] = Array([0.1] * output_dim)
     def forward(self, input):
-        pass
+        out = []
+        for kw, kb in zip(self.params['w'], self.params['b']):
+            res = 0
+            for i in range(input.shape[0]-(kw.shape[0]-1)):
+                for j in range(input.shape[1]-(kw.shape[1]-1)):
+                    matrix = input[i:kw.shape[0]+i, j:kw.shape[1]+j]
+                    print(matrix, kw, kb)
+                    res += matrix.dot(kw, axes=2) + kb
+            out.append(res)
+        return Array(out)
 
 if __name__ == "__main__":
-    w = Array([[0,1], [1,0]] for _ in range(3))
-    print(w.data)
-    for i in w: print(i)
+    model = Conv2D(10, 3, [2, 2])
+    x = Array([
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+        [13, 14, 15, 16]
+    ])
+    print(model.forward(x))
