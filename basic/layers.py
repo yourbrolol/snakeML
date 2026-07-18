@@ -49,6 +49,10 @@ class Conv2D(Layer):
             out.append(res)
         return Array(out)
 
+class MaxPool2D(Layer):
+    def __init__(self):
+        super().__init__()
+
 if __name__ == "__main__":
     model = Conv2D(10, 3, [2, 2], 2)
     x = Array([
