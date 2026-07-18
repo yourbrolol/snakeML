@@ -21,6 +21,11 @@ class ArrayTests(unittest.TestCase):
         self.assertAlmostEqual(arr.mean(), 2.5)
         self.assertAlmostEqual(arr.std(), math.sqrt(1.25))
 
+    def test_generator_inputs_are_materialized(self):
+        arr = Array([[0, 1], [1, 0]] for _ in range(3))
+        self.assertEqual(arr.data, [[[0, 1], [1, 0]], [[0, 1], [1, 0]], [[0, 1], [1, 0]]])
+        self.assertEqual(arr.shape, (3, 2, 2))
+
     def test_linear_algebra_helpers(self):
         mat = Array([[1, 2], [3, 4]])
         vec = Array([5, 6])

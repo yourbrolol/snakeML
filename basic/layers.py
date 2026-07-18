@@ -37,4 +37,5 @@ class Conv2D(Layer):
 
 if __name__ == "__main__":
     w = Array([[0,1], [1,0]] for _ in range(3))
+    print(w.data)
     for i in w: print(i)

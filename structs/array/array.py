@@ -21,6 +21,10 @@ class Array:
             return values.data
         if isinstance(values, (list, tuple)):
             return [self._to_list(v) for v in values]
+        if isinstance(values, range):
+            return list(values)
+        if hasattr(values, "__iter__") and not isinstance(values, (str, bytes, bytearray)):
+            return [self._to_list(v) for v in values]
         return values
 
     def _get_shape(self, data):
