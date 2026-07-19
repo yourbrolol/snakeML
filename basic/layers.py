@@ -38,10 +38,10 @@ class Conv2D(Layer):
         self.params['krnl'] = kernel
     def forward(self, input):
         out = []
+        pooled = pool2d(input, self.params['krnl'], self.params['strd'])
+        n = len(pooled)
+        dim = isqrt(n)
         for kw, kb in zip(self.params['w'], self.params['b']):
-            pooled = pool2d(input, self.params['krnl'], self.params['strd'])
-            n = len(pooled)
-            dim = isqrt(n)
             res = [i.dot(kw, axes=2)+kb for i in iter(pooled)]
             decomposed = [res[i : i + dim] for i in range(0, n, dim)]
             out.append(decomposed)
