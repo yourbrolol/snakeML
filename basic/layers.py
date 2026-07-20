@@ -20,9 +20,6 @@ class Linear(Layer):
         print(self.params['w'].shape, self.input.shape)
         out = (self.params['w'].matmul(self.input)) + self.params['b']
         return out
-    def update(self):
-        self.params['w'] -= self.grads['w']
-        self.params['b'] -= self.grads['b']
     def backward(self, loss_grad):
         grad = Array(loss_grad) if not isinstance(loss_grad, Array) else loss_grad
         self.grads['w'] = grad.outer(self.input)
@@ -36,14 +33,20 @@ class Conv2D(Layer):
         self.params['b'] = Array([0.1] * output_dim)
         self.params['strd'] = stride
         self.params['krnl'] = kernel
+        self.input = None
+        self.output = None
     def _cut(self, ishape, processed):
         slice_size = [ishape[0]-self.params['krnl'][0]+1, ishape[1]-self.params['krnl'][1]+1]
         out = []
         for mat in processed: out.append([mat[i:i+slice_size[1]] for i in range(0, processed.shape[1], slice_size[1])])
         return Array(out)
     def forward(self, input):
-        print(pool2d(input, self.params['krnl'], self.params['strd']))
-        return self._cut(input.shape, self.params['w'].dot(Array(pool2d(input, self.params['krnl'], self.params['strd'])), axes=[[1,2], [1,2]]) + self.params['b'])
+        self.input = Array.wraparray(input)
+        self.output = self._cut(self.input.shape, self.params['w'].dot(Array(pool2d(self.input, self.params['krnl'], self.params['strd'])), axes=[[1,2], [1,2]]) + self.params['b'])
+        return self.output
+    def backward(self, grad):
+        self.grads['w'], self.grads['b'], dX = grad.dot(self.input, [[1], [0]]), grad, grad.dot(self.params['w'], [[0], [0]])
+        return dX
 
 class MaxPool2D(Layer):
     def __init__(self):
