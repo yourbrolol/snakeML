@@ -37,15 +37,8 @@ class Conv2D(Layer):
         self.params['strd'] = stride
         self.params['krnl'] = kernel
     def forward(self, input):
-        out = []
-        pooled = pool2d(input, self.params['krnl'], self.params['strd'])
-        n = len(pooled)
-        dim = isqrt(n)
-        for kw, kb in zip(self.params['w'], self.params['b']):
-            res = [i.dot(kw, axes=2)+kb for i in iter(pooled)]
-            decomposed = [res[i : i + dim] for i in range(0, n, dim)]
-            out.append(decomposed)
-        return Array(out)
+        print(pool2d(input, self.params['krnl'], self.params['strd']))
+        return self.params['w'].dot(Array(pool2d(input, self.params['krnl'], self.params['strd'])), axes=[[1,2], [1,2]]) + self.params['b']
 
 class MaxPool2D(Layer):
     def __init__(self):
@@ -54,9 +47,7 @@ class MaxPool2D(Layer):
 if __name__ == "__main__":
     model = Conv2D(10, 3, [2, 2], [1,1])
     x = Array([
-        [1, 2, 3, 4],
-        [5, 6, 7, 8],
-        [9, 10, 11, 12],
-        [13, 14, 15, 16]
+        [1, 2, 3, 4, 5],
+        [6, 7, 8, 9, 10],
     ])
     print(model.forward(x))
