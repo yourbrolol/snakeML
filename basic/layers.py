@@ -36,9 +36,14 @@ class Conv2D(Layer):
         self.params['b'] = Array([0.1] * output_dim)
         self.params['strd'] = stride
         self.params['krnl'] = kernel
+    def _cut(self, ishape, processed):
+        slice_size = [ishape[0]-self.params['krnl'][0]+1, ishape[1]-self.params['krnl'][1]+1]
+        out = []
+        for mat in processed: out.append([mat[i:i+slice_size[1]] for i in range(0, processed.shape[1], slice_size[1])])
+        return Array(out)
     def forward(self, input):
         print(pool2d(input, self.params['krnl'], self.params['strd']))
-        return self.params['w'].dot(Array(pool2d(input, self.params['krnl'], self.params['strd'])), axes=[[1,2], [1,2]]) + self.params['b']
+        return self._cut(input.shape, self.params['w'].dot(Array(pool2d(input, self.params['krnl'], self.params['strd'])), axes=[[1,2], [1,2]]) + self.params['b'])
 
 class MaxPool2D(Layer):
     def __init__(self):
@@ -47,7 +52,9 @@ class MaxPool2D(Layer):
 if __name__ == "__main__":
     model = Conv2D(10, 3, [2, 2], [1,1])
     x = Array([
-        [1, 2, 3, 4, 5],
-        [6, 7, 8, 9, 10],
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+        [13, 14, 15, 16]
     ])
     print(model.forward(x))
