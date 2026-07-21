@@ -18,7 +18,7 @@ class LinearNeuron(Neuron):
         self.d_w = None
         self.d_b = None
     def forward(self, input_data):
-        self,input = input_data
+        self.input = input_data
         return input_data * self.w + self.b
     def backward(self, output_grad):
         self.d_w = output_grad / self.input
