@@ -35,6 +35,63 @@ class Array:
             return (0,)
         return (len(data),) + self._get_shape(data[0])
 
+    def reshape(self, *shape):
+        """
+        Returns a reshaped copy of the array.
+
+        Examples:
+            a.reshape(2, 3)
+            a.reshape((2, 3))
+            a.reshape(-1, 3)
+        """
+
+        # Allow tuple/list as the only argument
+        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+            shape = tuple(shape[0])
+
+        flat = list(self._flatten())
+        total = len(flat)
+
+        # Handle one inferred dimension (-1)
+        if shape.count(-1) > 1:
+            raise ValueError("Only one dimension may be -1.")
+
+        if -1 in shape:
+            known = 1
+            for s in shape:
+                if s != -1:
+                    known *= s
+
+            if total % known != 0:
+                raise ValueError(
+                    f"Cannot reshape array of size {total} into shape {shape}"
+                )
+
+            inferred = total // known
+            shape = tuple(inferred if s == -1 else s for s in shape)
+
+        # Verify total size
+        expected = 1
+        for s in shape:
+            if s < 0:
+                raise ValueError("Dimensions must be non-negative.")
+            expected *= s
+
+        if expected != total:
+            raise ValueError(
+                f"Cannot reshape array of size {total} into shape {shape}"
+            )
+
+        # Build nested lists recursively
+        flat_iter = iter(flat)
+
+        def build(dim):
+            if dim == len(shape):
+                return next(flat_iter)
+            return [build(dim + 1) for _ in range(shape[dim])]
+
+        return Array(build(0))
+
     def _unwrap(self, value):
         if isinstance(value, Array):
             return value.data

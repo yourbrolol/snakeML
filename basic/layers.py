@@ -29,21 +29,15 @@ class Linear(Layer):
 class Conv2D(Layer):
     def __init__(self, input_dim, output_dim, kernel, stride=[1,1]):
         super().__init__()
-        self.params['w'] = Array([[0.1] * kernel[1]] * kernel[0] for _ in range(output_dim))
+        self.params['w'] = Array([[[[0.1 for _ in range(kernel[1])] for _ in range(kernel[0])] for _ in range(input_dim)] for _ in range(output_dim)])
         self.params['b'] = Array([0.1] * output_dim)
         self.params['strd'] = stride
         self.params['krnl'] = kernel
         self.input = None
-        self.output = None
-    def _cut(self, ishape, processed):
-        slice_size = [ishape[0]-self.params['krnl'][0]+1, ishape[1]-self.params['krnl'][1]+1]
-        out = []
-        for mat in processed: out.append([mat[i:i+slice_size[1]] for i in range(0, processed.shape[1], slice_size[1])])
-        return Array(out)
     def forward(self, input):
         self.input = Array.wraparray(input)
-        self.output = self._cut(self.input.shape, self.params['w'].dot(Array(pool2d(self.input, self.params['krnl'], self.params['strd'])), axes=[[1,2], [1,2]]) + self.params['b'])
-        return self.output
+        out = (self.params['w'].dot(Array(pool2d(self.input, self.params['krnl'], self.params['strd'])), axes=[[1,2,3], [1,2,3]]) + self.params['b']).reshape(3,1,3,3)
+        return out
     def backward(self, grad):
         self.grads['w'], self.grads['b'], dX = grad.dot(self.input, [[1], [0]]), grad, grad.dot(self.params['w'], [[0], [0]])
         return dX
@@ -53,11 +47,11 @@ class MaxPool2D(Layer):
         super().__init__()
 
 if __name__ == "__main__":
-    model = Conv2D(10, 3, [2, 2], [1,1])
-    x = Array([
+    model = Conv2D(1, 3, [2, 2], [1,1])
+    x = Array([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],
         [9, 10, 11, 12],
         [13, 14, 15, 16]
-    ])
+    ]])
     print(model.forward(x))
