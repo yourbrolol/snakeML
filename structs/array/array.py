@@ -1,6 +1,11 @@
+from debug import get_logger
+from debug.errors import ShapeError, ValidationError
 from . import indexing
 
 from structs import broadcasting, linalg, stats, utils
+
+
+logger = get_logger(__name__)
 
 
 class Array:
@@ -9,6 +14,7 @@ class Array:
         self.data = self._to_list(values)
         self.shape = self._get_shape(self.data)
         self.ndim = len(self.shape)
+        logger.debug("Array created", shape=self.shape, ndim=self.ndim)
 
     @staticmethod
     def wraparray(value):
@@ -54,7 +60,8 @@ class Array:
 
         # Handle one inferred dimension (-1)
         if shape.count(-1) > 1:
-            raise ValueError("Only one dimension may be -1.")
+            logger.error("invalid reshape shape has multiple inferred dimensions", shape=shape)
+            raise ShapeError("Only one dimension may be -1.")
 
         if -1 in shape:
             known = 1
@@ -63,7 +70,8 @@ class Array:
                     known *= s
 
             if total % known != 0:
-                raise ValueError(
+                logger.error("cannot infer reshape size", total=total, shape=shape)
+                raise ShapeError(
                     f"Cannot reshape array of size {total} into shape {shape}"
                 )
 
@@ -74,11 +82,13 @@ class Array:
         expected = 1
         for s in shape:
             if s < 0:
-                raise ValueError("Dimensions must be non-negative.")
+                logger.error("negative reshape dimension", shape=shape)
+                raise ShapeError("Dimensions must be non-negative.")
             expected *= s
 
         if expected != total:
-            raise ValueError(
+            logger.error("reshape total mismatch", total=total, shape=shape, expected=expected)
+            raise ShapeError(
                 f"Cannot reshape array of size {total} into shape {shape}"
             )
 
@@ -121,7 +131,9 @@ class Array:
 
     def flatten(self):
         """Returns a flat 1D Array version of the current array."""
-        return Array(list(self._flatten(self.data)))
+        flat_array = Array(list(self._flatten(self.data)))
+        logger.debug("flattened array", original_shape=self.shape, flattened_shape=flat_array.shape)
+        return flat_array
 
     # --- Element-wise Operations Helper ---
     def _elementwise(self, other, op):
@@ -194,4 +206,4 @@ class Array:
 if __name__ == "__main__":
     a = Array([[1, 2], [3, 4]])
     b = Array([[5, 6], [7, 8]])
-    print(linalg.matmul(a, b))
+    logger.info("example matmul", result=linalg.matmul(a, b))

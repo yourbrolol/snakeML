@@ -1,7 +1,14 @@
+from debug import get_logger
+from debug.errors import TypeMismatchError
+
+logger = get_logger(__name__)
+
+
 def _normalize_key(ndim, _key):
     key = _key if isinstance(_key, tuple) else (_key,)
 
     if key.count(Ellipsis) > 1:
+        logger.error("invalid indexing key contains multiple ellipses", key=key)
         raise IndexError("__getitem__ should at most contain one Ellipsis (...)")
 
     cleaned = []
@@ -49,7 +56,8 @@ def _getitem(array, _key, target=None, depth=0):
     if isinstance(head, slice):
         return [_getitem(array, tuple(tail), item, depth + 1) for item in target[head]]
 
-    raise TypeError(f"Unsupported index type: {type(head).__name__}")
+    logger.error("unsupported index type", index_type=type(head).__name__)
+    raise TypeMismatchError(f"Unsupported index type: {type(head).__name__}")
 
 
 def _setitem(array, _key, value, target=None, depth=0):

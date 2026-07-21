@@ -1,5 +1,5 @@
 from structs import Array
-from basic.utils import pool2d
+from basic.utils import im2col
 from debug import get_logger, operation_context
 from math import isqrt
 
@@ -41,10 +41,14 @@ class Conv2D(Layer):
         self.input = None
     def forward(self, input):
         self.input = Array.wraparray(input)
-        out = (self.params['w'].dot(Array.wraparray((pool2d(self.input, self.params['krnl'], self.params['strd']))), axes=[[1,2,3], [1,2,3]]) + self.params['b']).reshape(3,1,3,3)
-        return out
+        with operation_context("conv2d.forward", input_shape=self.input.shape, kernel=self.params['krnl'], stride=self.params['strd']):
+            logger.debug("conv2d forward", input_shape=self.input.shape, kernel=self.params['krnl'], stride=self.params['strd'])
+            out = (self.params['w'].dot(Array.wraparray((im2col(self.input, self.params['krnl'], self.params['strd']))), axes=[[1,2,3], [1,2,3]]) + self.params['b']).reshape(3,1,3,3)
+            logger.debug("conv2d output", output_shape=out.shape)
+            return out
     def backward(self, grad):
         self.grads['w'], self.grads['b'], dX = grad.dot(self.input, [[1], [0]]), grad, grad.dot(self.params['w'], [[0], [0]])
+        logger.debug("conv2d backward", grad_shape=getattr(grad, 'shape', None), input_shape=getattr(self.input, 'shape', None))
         return dX
 
 class MaxPool2D(Layer):
