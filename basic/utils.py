@@ -1,4 +1,4 @@
-def pool2d(input, kernel, stride):
+def im2col(input, kernel, stride):
     Cin, H, W = input.shape
     KH, KW = kernel
     SH, SW = stride

@@ -36,7 +36,7 @@ class Conv2D(Layer):
         self.input = None
     def forward(self, input):
         self.input = Array.wraparray(input)
-        out = (self.params['w'].dot(Array(pool2d(self.input, self.params['krnl'], self.params['strd'])), axes=[[1,2,3], [1,2,3]]) + self.params['b']).reshape(3,1,3,3)
+        out = (self.params['w'].dot(Array.wraparray((pool2d(self.input, self.params['krnl'], self.params['strd']))), axes=[[1,2,3], [1,2,3]]) + self.params['b']).reshape(3,1,3,3)
         return out
     def backward(self, grad):
         self.grads['w'], self.grads['b'], dX = grad.dot(self.input, [[1], [0]]), grad, grad.dot(self.params['w'], [[0], [0]])
