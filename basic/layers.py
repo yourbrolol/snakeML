@@ -1,6 +1,9 @@
 from structs import Array
 from basic.utils import pool2d
+from debug import get_logger, operation_context
 from math import isqrt
+
+logger = get_logger(__name__)
 
 class Layer():
     def __init__(self):
@@ -17,13 +20,15 @@ class Linear(Layer):
         self.params['b'] = Array([0.1] * output_dim)
     def forward(self, input_data):
         self.input = Array(input_data) if not isinstance(input_data, Array) else input_data
-        print(self.params['w'].shape, self.input.shape)
-        out = (self.params['w'].matmul(self.input)) + self.params['b']
-        return out
+        with operation_context("linear.forward", input_shape=self.input.shape, weight_shape=self.params['w'].shape):
+            logger.debug("linear forward %s -> %s", self.params['w'].shape, self.input.shape)
+            out = (self.params['w'].matmul(self.input)) + self.params['b']
+            return out
     def backward(self, loss_grad):
         grad = Array(loss_grad) if not isinstance(loss_grad, Array) else loss_grad
         self.grads['w'] = grad.outer(self.input)
         self.grads['b'] = grad
+        logger.debug("linear backward grad=%s", grad.shape, operation="linear.backward")
         return self.params['w'].T.matmul(grad)
 
 class Conv2D(Layer):
@@ -54,4 +59,4 @@ if __name__ == "__main__":
         [9, 10, 11, 12],
         [13, 14, 15, 16]
     ]])
-    print(model.forward(x))
+    logger.info("forward result %s", model.forward(x), operation="main")
