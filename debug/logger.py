@@ -32,6 +32,23 @@ class Logger:
         payload = format_message(message, level=level, module=self.name, context=context or None)
         print(payload, file=stream)
 
+        # optionally persist logs to a file when enabled in config
+        try:
+            if config.get("save") and config.get("log_file"):
+                log_path = config.get("log_file")
+                try:
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(payload + "\n")
+                except Exception:
+                    # avoid raising from logging; fallback to stderr
+                    try:
+                        print(f"[snakeML][ERROR] failed to write log to {log_path}", file=sys.stderr)
+                    except Exception:
+                        pass
+        except Exception:
+            # defensive: never let logging crash the application
+            pass
+
     def debug(self, message, *args, **kwargs):
         self._emit("debug", message, *args, **kwargs)
 
