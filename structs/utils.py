@@ -27,3 +27,4 @@ def set_nested(lst, idx, value):
     for i in idx[:-1]:
         lst = lst[i]
     lst[idx[-1]] = value
+    return lst

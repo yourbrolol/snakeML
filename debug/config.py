@@ -10,7 +10,7 @@ LEVELS = {
 
 _DEFAULTS = {
     "enabled": True,
-    "level": "info",
+    "level": "debug",
     "stream": None,
     "include_module": True,
     "include_context": True,
