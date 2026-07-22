@@ -1,5 +1,10 @@
 import math
 
+from debug import get_logger
+from debug.errors import ValidationError
+
+logger = get_logger(__name__)
+
 
 def _sum_values(flat):
     total = 0
@@ -17,7 +22,8 @@ def mean(flat):
     """Returns the mean of all elements."""
     flat = list(flat)
     if not flat:
-        raise ValueError("mean of empty array")
+        logger.error("mean called on empty collection")
+        raise ValidationError("mean of empty array")
     return sum(flat) / len(flat)
 
 
@@ -25,7 +31,8 @@ def std(flat):
     """Returns the standard deviation of all elements."""
     flat = list(flat)
     if not flat:
-        raise ValueError("std of empty array")
+        logger.error("std called on empty collection")
+        raise ValidationError("std of empty array")
     m = mean(flat)
     variance = sum((x - m) ** 2 for x in flat) / len(flat)
     return math.sqrt(variance)

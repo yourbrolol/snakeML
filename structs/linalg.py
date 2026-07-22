@@ -1,9 +1,15 @@
+from debug import get_logger
+from debug.errors import ShapeError, ValidationError
 from .utils import build_index, zeroes, set_nested, indices
+
+logger = get_logger(__name__)
 
 
 def transpose(array):
+    logger.debug("transpose requested", ndim=array.ndim, shape=getattr(array, 'shape', None))
     if array.ndim != 2:
-        raise ValueError("transpose is only defined for 2D arrays")
+        logger.error("transpose only defined for 2D arrays", ndim=array.ndim)
+        raise ShapeError("transpose is only defined for 2D arrays")
 
     rows = len(array)
     cols = len(array[0]) if rows else 0
@@ -14,7 +20,8 @@ def transpose(array):
 def tensordot(a, b, axes=2):
     if isinstance(axes, int):
         if axes < 0:
-            raise ValueError("axes must be >= 0")
+            logger.error("invalid tensordot axes", axes=axes)
+            raise ValidationError("axes must be >= 0")
 
         axes_a = list(range(a.ndim - axes, a.ndim))
         axes_b = list(range(axes))
@@ -27,7 +34,8 @@ def tensordot(a, b, axes=2):
     axes_b = [ax % b.ndim for ax in axes_b]
 
     if len(axes_a) != len(axes_b):
-        raise ValueError("Axes lengths differ.")
+        logger.error("tensordot axes length mismatch", axes_a=axes_a, axes_b=axes_b)
+        raise ShapeError("Axes lengths differ.")
 
 #    for aa, bb in zip(axes_a, axes_b):
 #        if a.shape[aa] != b.shape[bb]:
@@ -74,8 +82,10 @@ def tensordot(a, b, axes=2):
 
 
 def matvec(a, b):
+    logger.debug("matvec requested", a_shape=getattr(a, 'shape', None), b_shape=getattr(b, 'shape', None))
     if a.shape[1] != b.shape[0]:
-        raise ValueError(f"Shapes {a.shape} and {b.shape} not aligned.")
+        logger.error("matvec shape mismatch", a_shape=a.shape, b_shape=b.shape)
+        raise ShapeError(f"Shapes {a.shape} and {b.shape} not aligned.")
 
     result = []
     for row in a:
@@ -99,7 +109,8 @@ def matmul(a, b):
         return [sum(r * elem for r, elem in zip(row, b_data)) for row in a_data]
 
     if len(a_data[0]) != len(b_data):
-        raise ValueError(f"Matrix shapes not aligned: {len(a_data[0])} != {len(b_data)}")
+        logger.error("matmul matrix shapes not aligned", a_shape=getattr(a, 'shape', None), b_shape=getattr(b, 'shape', None))
+        raise ShapeError(f"Matrix shapes not aligned: {len(a_data[0])} != {len(b_data)}")
 
     return [
         [sum(row[k] * b_data[k][col_idx] for k in range(len(b_data))) for col_idx in range(len(b_data[0]))]

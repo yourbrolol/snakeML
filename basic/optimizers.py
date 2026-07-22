@@ -1,19 +1,28 @@
+from debug import get_logger
+
+logger = get_logger(__name__)
+
 class Optimizer():
-    def __init__(self, layers=[], lr=0.01):
-        self.layers = layers
-        self.lr = 0.01
+    def __init__(self, layers=None, lr=0.01):
+        self.layers = [] if layers is None else layers
+        self.lr = lr
     def step(self): raise NotImplementedError
     def zero_grad(self): raise NotImplementedError
 
 class SGD(Optimizer):
-    def __init__(self, layers=[], lr=0.01):
+    def __init__(self, layers=None, lr=0.01):
         super().__init__(layers, lr)
     def step(self):
+        logger.debug("optimizer step", layer_count=len(self.layers), lr=self.lr)
         for layer in self.layers:
-            if not layer.params or not layer.grads: continue
+            if not layer.params or not layer.grads:
+                logger.debug("optimizer skipping layer with no params or grads", layer=layer)
+                continue
             layer.params['w'] -= self.lr * layer.grads['w']
             layer.params['b'] -= self.lr * layer.grads['b']
     def zero_grad(self):
+        logger.debug("optimizer zero_grad", layer_count=len(self.layers))
         for layer in self.layers:
-            if not layer.grads: continue
+            if not layer.grads:
+                continue
             layer.grads = {}
