@@ -8,6 +8,10 @@ class Initializer:
         self.params = {}
     def __call__(self, shape): raise NotImplementedError
 
+class Constant(Initializer):
+    def __init__(self): super().__init__()
+    def __call__(self, shape): return Array(newarr(shape, lambda: 0))
+
 class XavierNormal(Initializer):
     def __init__(self): super().__init__()
     def __call__(self, shape, fan_in, fan_out):
