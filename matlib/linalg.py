@@ -1,6 +1,6 @@
 from debug import get_logger
 from debug.errors import ShapeError, ValidationError
-from .utils import build_index, zeroes, set_nested, indices
+from structs.utils import build_index, zeroes, set_nested, indices
 
 logger = get_logger(__name__)
 

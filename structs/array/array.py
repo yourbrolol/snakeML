@@ -2,7 +2,8 @@ from debug import get_logger
 from debug.errors import ShapeError, ValidationError
 from . import indexing
 
-from structs import broadcasting, linalg, stats, utils
+from structs import utils
+from matlib import broadcasting, linalg, stats
 
 
 logger = get_logger(__name__)
