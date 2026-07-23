@@ -1,7 +1,6 @@
 from structs import Array
 from basic.utils import im2col
 from debug import get_logger, operation_context
-from math import isqrt
 
 logger = get_logger(__name__)
 
@@ -14,10 +13,10 @@ class Layer():
     def backward(self, output_grad): raise NotImplementedError
 
 class Linear(Layer):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, initializer):
         super().__init__()
-        self.params['w'] = Array([[0.1] * input_dim for _ in range(output_dim)])
-        self.params['b'] = Array([0.1] * output_dim)
+        self.params['w'] = initializer([output_dim, input_dim], input_dim, output_dim)
+        self.params['b'] = Array([0 for _ in range(output_dim)])
     def forward(self, input_data):
         self.input = Array(input_data) if not isinstance(input_data, Array) else input_data
         with operation_context("linear.forward", input_shape=self.input.shape, weight_shape=self.params['w'].shape):
@@ -32,9 +31,9 @@ class Linear(Layer):
         return self.params['w'].T.matmul(grad)
 
 class Conv2D(Layer):
-    def __init__(self, input_dim, output_dim, kernel, stride=[1,1]):
+    def __init__(self, input_dim, output_dim, initializer, kernel, stride=[1,1]):
         super().__init__()
-        self.params['w'] = Array([[[[0.1 for _ in range(kernel[1])] for _ in range(kernel[0])] for _ in range(input_dim)] for _ in range(output_dim)])
+        self.params['w'] = initializer([output_dim, input_dim, *kernel], input_dim, output_dim)
         self.params['b'] = Array([0.1] * output_dim)
         self.params['strd'] = stride
         self.params['krnl'] = kernel
@@ -56,7 +55,8 @@ class MaxPool2D(Layer):
         super().__init__()
 
 if __name__ == "__main__":
-    model = Conv2D(1, 3, [2, 2], [1,1])
+    from basic.initializers import XavierNormal
+    model = Conv2D(1, 3, XavierNormal(), [2, 2], [1,1])
     x = Array([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],
