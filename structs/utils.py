@@ -28,3 +28,12 @@ def set_nested(lst, idx, value):
         lst = lst[i]
     lst[idx[-1]] = value
     return lst
+
+def newarr(shape, fill):
+    if len(shape) == 0:
+        return fill()
+
+    return [
+        newarr(shape[1:], fill)
+        for _ in range(shape[0])
+    ]
