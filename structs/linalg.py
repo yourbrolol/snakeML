@@ -6,6 +6,7 @@ logger = get_logger(__name__)
 
 
 def transpose(array):
+    """Transpose a 2D array by swapping rows and columns."""
     logger.debug("transpose requested", ndim=array.ndim, shape=getattr(array, 'shape', None))
     if array.ndim != 2:
         logger.error("transpose only defined for 2D arrays", ndim=array.ndim)
@@ -18,6 +19,7 @@ def transpose(array):
 
 
 def tensordot(a, b, axes=2):
+    """Compute tensor dot product along specified contraction axes."""
     if isinstance(axes, int):
         if axes < 0:
             logger.error("invalid tensordot axes", axes=axes)
@@ -82,6 +84,7 @@ def tensordot(a, b, axes=2):
 
 
 def matvec(a, b):
+    """Compute matrix-vector product."""
     logger.debug("matvec requested", a_shape=getattr(a, 'shape', None), b_shape=getattr(b, 'shape', None))
     if a.shape[1] != b.shape[0]:
         logger.error("matvec shape mismatch", a_shape=a.shape, b_shape=b.shape)
@@ -94,6 +97,7 @@ def matvec(a, b):
 
 
 def matmul(a, b):
+    """Compute matrix multiplication or dot product for 1D/2D arrays."""
     a_data = a.data if hasattr(a, "data") else a
     b_data = b.data if hasattr(b, "data") else b
 
@@ -119,6 +123,7 @@ def matmul(a, b):
 
 
 def outer(a, b):
+    """Compute outer product of two 1D arrays or flattened sequences."""
     a_data = a.data if hasattr(a, "data") else a
     b_data = b.data if hasattr(b, "data") else b
 

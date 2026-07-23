@@ -5,6 +5,7 @@ logger = get_logger(__name__)
 
 
 def _normalize_key(ndim, _key):
+    """Normalize and expand indexing keys including slices and Ellipsis to match array rank."""
     key = _key if isinstance(_key, tuple) else (_key,)
 
     if key.count(Ellipsis) > 1:
@@ -26,6 +27,7 @@ def _normalize_key(ndim, _key):
 
 
 def _coerce_value(value):
+    """Coerce Array instances or nested sequences into plain Python lists for item assignment."""
     from structs.array.array import Array
 
     if isinstance(value, Array):
@@ -36,6 +38,7 @@ def _coerce_value(value):
 
 
 def _getitem(array, _key, target=None, depth=0):
+    """Recursively retrieve items or slices from nested array list data."""
     if depth == 0:
         key = _normalize_key(array.ndim, _key)
     else:
@@ -61,6 +64,7 @@ def _getitem(array, _key, target=None, depth=0):
 
 
 def _setitem(array, _key, value, target=None, depth=0):
+    """Recursively set values or slices within nested array list data."""
     if depth == 0:
         key = _normalize_key(array.ndim, _key)
     else:

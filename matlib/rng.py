@@ -2,6 +2,7 @@ import math
 import random
 
 def normal(mean=0.0, std=1.0):
+    """Generate a Gaussian random scalar using the Box-Muller transform."""
     u1 = random.random()
     u2 = random.random()
 

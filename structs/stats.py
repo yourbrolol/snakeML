@@ -7,6 +7,7 @@ logger = get_logger(__name__)
 
 
 def _sum_values(flat):
+    """Accumulate and return the sum of flat elements."""
     total = 0
     for value in flat:
         total += value

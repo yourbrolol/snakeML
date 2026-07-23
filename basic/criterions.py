@@ -7,9 +7,11 @@ logger = get_logger(__name__)
 
 class MSE:
     def __init__(self):
+        """Mean Squared Error criterion."""
         self.name = "MSELoss"
 
     def forward(self, y_pred, y_true):
+        """Compute the Mean Squared Error loss between predicted and ground truth values."""
         with operation_context("MSE.forward"):
             logger.debug("enter forward; y_pred=%s", summarize_diagnostics(y_pred))
             logger.debug("enter forward; y_true=%s", summarize_diagnostics(y_true))
@@ -36,6 +38,7 @@ class MSE:
             return out
 
     def backward(self, y_pred, y_true):
+        """Compute the gradient of MSE loss with respect to predictions."""
         with operation_context("MSE.backward"):
             logger.debug("enter backward; y_pred=%s", summarize_diagnostics(y_pred))
             try:

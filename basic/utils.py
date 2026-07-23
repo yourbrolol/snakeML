@@ -4,6 +4,7 @@ from debug.validator import ensure_type
 logger = get_logger(__name__)
 
 def im2col(input, kernel, stride):
+    """Extract image patches according to kernel size and stride."""
     with operation_context("im2col", kernel=kernel, stride=stride):
         logger.debug("enter im2col; input=%s", summarize_diagnostics(input))
         try:

@@ -1,4 +1,5 @@
 def broadcast(a, b):
+    """Normalize input array structures for compatible broadcasting and matrix operations."""
     def _is_1d(obj):
         if hasattr(obj, 'ndim'):
             try:
