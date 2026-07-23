@@ -9,9 +9,16 @@ class Layer():
     def __init__(self):
         self.params = {}
         self.grads = {}
+        self.submodules = {}
         self.input = None
     def forward(self, input_data): raise NotImplementedError
     def backward(self, output_grad): raise NotImplementedError
+    def parameters(self):
+        """Recursively collect all parameters from this layer and child submodules."""
+        params = dict(self.params)
+        for name, module in self.submodules.items():
+            params.update({f"{name}.{k}": v for k, v in module.parameters().items()})
+        return params
 
 class Linear(Layer):
     def __init__(self, input_dim, output_dim, initializer=None):
