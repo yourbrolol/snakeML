@@ -14,7 +14,6 @@ class Array:
         self.data = self._to_list(values)
         self.shape = self._get_shape(self.data)
         self.ndim = len(self.shape)
-        logger.debug("Array created", shape=self.shape, ndim=self.ndim)
 
     @staticmethod
     def wraparray(value):

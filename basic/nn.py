@@ -4,7 +4,7 @@ from debug import get_logger, operation_context
 logger = get_logger(__name__)
 
 class Sequential():
-    def __init__(self, layers: list[Layer] = []):
+    def __init__(self, layers: list[Layer] | None = None):
         self.layers = layers
         self.grads = {}
         self.input = None

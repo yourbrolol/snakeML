@@ -1,1 +1,3 @@
-from structs.array.array import Array
+from .array.array import Array
+
+__all__ = ["Array"]

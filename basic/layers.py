@@ -14,8 +14,11 @@ class Layer():
     def backward(self, output_grad): raise NotImplementedError
 
 class Linear(Layer):
-    def __init__(self, input_dim, output_dim, initializer):
+    def __init__(self, input_dim, output_dim, initializer=None):
         super().__init__()
+        if initializer is None:
+            from basic.initializers import XavierNormal
+            initializer = XavierNormal()
         self.params['w'] = initializer([output_dim, input_dim], input_dim, output_dim)
         self.params['b'] = Constant()([output_dim])
     def forward(self, input_data):
@@ -29,11 +32,13 @@ class Linear(Layer):
         self.grads['w'] = grad.outer(self.input)
         self.grads['b'] = grad
         logger.debug("linear backward grad=%s", grad.shape, operation="linear.backward")
-        return self.params['w'].T.matmul(grad)
 
 class Conv2D(Layer):
-    def __init__(self, input_dim, output_dim, initializer, kernel, stride=[1,1]):
+    def __init__(self, input_dim, output_dim, kernel, stride=[1,1], initializer=None):
         super().__init__()
+        if initializer is None:
+            from basic.initializers import XavierNormal
+            initializer = XavierNormal()
         self.params['w'] = initializer([output_dim, input_dim, *kernel], input_dim, output_dim)
         self.params['b'] = Constant()([output_dim])
         self.params['strd'] = stride
@@ -43,7 +48,12 @@ class Conv2D(Layer):
         self.input = Array.wraparray(input)
         with operation_context("conv2d.forward", input_shape=self.input.shape, kernel=self.params['krnl'], stride=self.params['strd']):
             logger.debug("conv2d forward", input_shape=self.input.shape, kernel=self.params['krnl'], stride=self.params['strd'])
-            out = (self.params['w'].dot(Array.wraparray((im2col(self.input, self.params['krnl'], self.params['strd']))), axes=[[1,2,3], [1,2,3]]) + self.params['b']).reshape(3,1,3,3)
+            KH, KW = self.params['krnl']
+            SH, SW = self.params['strd']
+            out_h = (self.input.shape[1] - KH) // SH + 1
+            out_w = (self.input.shape[2] - KW) // SW + 1
+            out_c = self.params['w'].shape[0]
+            out = (self.params['w'].dot(Array.wraparray((im2col(self.input, self.params['krnl'], self.params['strd']))), axes=[[1,2,3], [1,2,3]]) + self.params['b']).reshape(out_c, 1, out_h, out_w)
             logger.debug("conv2d output", output_shape=out.shape)
             return out
     def backward(self, grad):
@@ -56,8 +66,7 @@ class MaxPool2D(Layer):
         super().__init__()
 
 if __name__ == "__main__":
-    from basic.initializers import XavierNormal
-    model = Conv2D(1, 3, XavierNormal(), [2, 2], [1,1])
+    model = Conv2D(1, 3, [2, 2], [1,1])
     x = Array([[
         [1, 2, 3, 4],
         [5, 6, 7, 8],

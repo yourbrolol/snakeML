@@ -18,8 +18,8 @@ class SGD(Optimizer):
             if not layer.params or not layer.grads:
                 logger.debug("optimizer skipping layer with no params or grads", layer=layer)
                 continue
-            layer.params['w'] -= self.lr * layer.grads['w']
-            layer.params['b'] -= self.lr * layer.grads['b']
+            for key in layer.params:
+                if key in layer.grads: layer.params[key] -= self.lr * layer.grads[key]
     def zero_grad(self):
         logger.debug("optimizer zero_grad", layer_count=len(self.layers))
         for layer in self.layers:

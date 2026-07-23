@@ -1,4 +1,4 @@
-from .structs import Vector
+from structs import Vector
 
 class Neuron():
     def __init__(self, input_dim):
