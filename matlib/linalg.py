@@ -18,6 +18,38 @@ def transpose(array):
     return [[array[r][c] for r in range(rows)] for c in range(cols)]
 
 
+def permute(array, axes):
+    """Permute the dimensions of an N-D array according to the given axes order.
+
+    Parameters
+    ----------
+    array : Array
+        The input array.
+    axes : tuple or list of int
+        The desired axis ordering, e.g. (2, 0, 1) to move axis 2 first.
+    """
+    axes = list(axes)
+    ndim = array.ndim
+    shape = array.shape
+
+    if len(axes) != ndim:
+        logger.error("permute axes length mismatch", ndim=ndim, axes=axes)
+        raise ShapeError(f"permute axes must have length {ndim}, got {len(axes)}")
+    if sorted(axes) != list(range(ndim)):
+        logger.error("permute axes invalid", axes=axes)
+        raise ShapeError(f"permute axes must be a permutation of 0..{ndim - 1}")
+
+    new_shape = tuple(shape[ax] for ax in axes)
+    result = zeroes(new_shape)
+
+    for old_idx in indices(shape):
+        new_idx = tuple(old_idx[ax] for ax in axes)
+        set_nested(result, new_idx, array[old_idx])
+
+    logger.debug("permute completed", old_shape=shape, new_shape=new_shape, axes=axes)
+    return result
+
+
 def tensordot(a, b, axes=2):
     """Compute tensor dot product along specified contraction axes."""
     if isinstance(axes, int):

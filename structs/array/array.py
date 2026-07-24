@@ -3,7 +3,7 @@ from debug.errors import ShapeError, ValidationError
 from . import indexing
 
 from structs import utils
-from matlib import broadcasting, linalg, stats
+from matlib import broadcasting, linalg, stats, ops, manipulation
 
 
 logger = get_logger(__name__)
@@ -172,7 +172,27 @@ class Array:
 
     # --- Transposition ---
     @property
-    def T(self): return self._wrap_result(linalg.transpose(self))
+    def T(self):
+        """Transpose: swaps last two axes (generalises to N-D via permute)."""
+        if self.ndim == 2:
+            return self._wrap_result(linalg.transpose(self))
+        if self.ndim < 2:
+            return self
+        # General N-D: reverse all axes
+        axes = list(range(self.ndim - 1, -1, -1))
+        return self._wrap_result(linalg.permute(self, axes))
+
+    def permute(self, *axes):
+        """Return a view with axes permuted.
+
+        Parameters
+        ----------
+        axes : int or sequence of int
+            New axis ordering, e.g. ``a.permute(2, 0, 1)``.
+        """
+        if len(axes) == 1 and isinstance(axes[0], (tuple, list)):
+            axes = tuple(axes[0])
+        return self._wrap_result(linalg.permute(self, axes))
 
     # --- Linear algebra ---
     def matvec(self, other): return self._wrap_result(linalg.matvec(self, other))
@@ -193,10 +213,79 @@ class Array:
     def __setitem__(self, key, value):
         indexing._setitem(self, key, value)
 
-    # --- Statistics ---
-    def sum(self): return stats.sum(list(self._flatten()))
-    def mean(self): return stats.mean(list(self._flatten()))
-    def std(self): return stats.std(list(self._flatten()))
+    # --- Statistics (global, flattened) ---
+    def sum(self, axis=None, keepdims=False):
+        """Sum of all elements, or along a given axis."""
+        if axis is None:
+            return stats.sum(list(self._flatten()))
+        return self._wrap_result(stats.sum_axis(self, axis, keepdims=keepdims))
+
+    def mean(self, axis=None, keepdims=False):
+        """Mean of all elements, or along a given axis."""
+        if axis is None:
+            return stats.mean(list(self._flatten()))
+        return self._wrap_result(stats.mean_axis(self, axis, keepdims=keepdims))
+
+    def variance(self, axis=None, keepdims=False):
+        """Population variance of all elements, or along a given axis."""
+        if axis is None:
+            return stats.variance(list(self._flatten()))
+        return self._wrap_result(stats.variance_axis(self, axis, keepdims=keepdims))
+
+    def std(self, axis=None, keepdims=False):
+        """Standard deviation of all elements, or along a given axis."""
+        import math as _math
+        if axis is None:
+            return stats.std(list(self._flatten()))
+        return self._wrap_result(
+            # std = sqrt(variance) applied element-wise to the variance result
+            ops._apply_unary(
+                stats.variance_axis(self, axis, keepdims=keepdims),
+                _math.sqrt,
+            )
+        )
+
+    def max(self, axis=None, keepdims=False):
+        """Maximum value of all elements, or along a given axis."""
+        if axis is None:
+            return stats.max(list(self._flatten()))
+        return self._wrap_result(stats.max_axis(self, axis, keepdims=keepdims))
+
+    # --- Element-wise unary math ---
+    def exp(self):
+        """Element-wise e^x."""
+        return self._wrap_result(ops.exp(self))
+
+    def log(self):
+        """Element-wise natural logarithm ln(x)."""
+        return self._wrap_result(ops.log(self))
+
+    def sqrt(self):
+        """Element-wise square root."""
+        return self._wrap_result(ops.sqrt(self))
+
+    def abs(self):
+        """Element-wise absolute value."""
+        return self._wrap_result(ops.abs(self))
+
+    # --- Array manipulation (class-level convenience) ---
+    @staticmethod
+    def concatenate(arrays, axis=0):
+        """Concatenate a list of Arrays along an existing axis."""
+        return Array(manipulation.concatenate(arrays, axis=axis))
+
+    @staticmethod
+    def stack(arrays, axis=0):
+        """Stack a list of Arrays along a new axis."""
+        return Array(manipulation.stack(arrays, axis=axis))
+
+    def split(self, indices_or_sections, axis=0):
+        """Split this Array into sub-arrays along an axis.
+
+        Returns a list of Array objects.
+        """
+        parts = manipulation.split(self, indices_or_sections, axis=axis)
+        return [Array(p) for p in parts]
 
     # --- Representation ---
     def __repr__(self):
