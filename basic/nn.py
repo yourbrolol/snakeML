@@ -3,6 +3,22 @@ from debug import get_logger, operation_context
 
 logger = get_logger(__name__)
 
+class LayerList(list):
+    """A list-like container for layers that allows attribute access to submodules."""
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.submodules = {f"{i}": layer for i, layer in enumerate(self)}
+    def __getattr__(self, name):
+        if name in self.submodules:
+            return self.submodules[name]
+        raise AttributeError(f"'LayerList' object has no attribute '{name}'")
+    def parameters(self):
+        """Recursively collect parameters from all layers in the list."""
+        params = {}
+        for i, layer in enumerate(self):
+            params.update({f"{i}.{k}": v for k, v in layer.parameters().items()})
+        return params
+
 class Sequential():
     def __init__(self, layers: list[Layer] | None = None):
         """Initialize a sequential container with an ordered list of layers."""
