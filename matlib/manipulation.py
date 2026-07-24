@@ -243,3 +243,63 @@ def split(array, indices_or_sections, axis=0):
     return results
 
 
+# ---------------------------------------------------------------------------
+# Unbind
+# ---------------------------------------------------------------------------
+
+def unbind(array, axis=0):
+    """Remove a dimension by returning all slices along it.
+
+    Equivalent to indexing every position along *axis* and collecting the
+    results. Each returned array has one fewer dimension than the input.
+
+    Parameters
+    ----------
+    array : Array
+        The input array.
+    axis : int, optional
+        The axis to unbind along (default 0).
+
+    Returns
+    -------
+    list of list
+        A list of ``shape[axis]`` nested lists, each with shape equal to
+        the input shape with the *axis* dimension removed.
+
+    Examples
+    --------
+    ::
+
+        # a has shape (3, 4)
+        slices = unbind(a, axis=0)   # → list of 3 arrays, each shape (4,)
+        slices = unbind(a, axis=1)   # → list of 4 arrays, each shape (3,)
+    """
+    shape = _get_shape(array)
+    ndim = len(shape)
+    axis_norm = axis % ndim
+    axis_size = shape[axis_norm]
+
+    # Output shape: input shape with the axis dimension removed
+    out_shape = tuple(s for i, s in enumerate(shape) if i != axis_norm)
+
+    results = []
+    for k in range(axis_size):
+        if out_shape:
+            sec = zeroes(out_shape)
+            for out_idx in indices(out_shape):
+                # Reconstruct the input index: insert k at axis_norm
+                src_idx = out_idx[:axis_norm] + (k,) + out_idx[axis_norm:]
+                set_nested(sec, out_idx, array[src_idx])
+        else:
+            # Scalar result (unbinding a 1-D array)
+            sec = array[(k,)]
+        results.append(sec)
+
+    logger.debug(
+        "unbind completed",
+        axis=axis_norm,
+        in_shape=shape,
+        n_slices=axis_size,
+        out_shape=out_shape,
+    )
+    return results

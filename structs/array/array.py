@@ -287,6 +287,33 @@ class Array:
         parts = manipulation.split(self, indices_or_sections, axis=axis)
         return [Array(p) for p in parts]
 
+    def unbind(self, axis=0):
+        """Remove a dimension by returning all slices along it.
+
+        Each returned Array has one fewer dimension than ``self``.
+
+        Parameters
+        ----------
+        axis : int, optional
+            The axis to unbind along (default 0).
+
+        Returns
+        -------
+        list of Array
+            ``self.shape[axis]`` Arrays, each of shape
+            ``self.shape[:axis] + self.shape[axis+1:]``.
+
+        Examples
+        --------
+        ::
+
+            # a has shape (3, 4)
+            rows = a.unbind(axis=0)    # → list of 3 Arrays, each shape (4,)
+            cols = a.unbind(axis=1)    # → list of 4 Arrays, each shape (3,)
+        """
+        parts = manipulation.unbind(self, axis=axis)
+        return [Array(p) if isinstance(p, list) else p for p in parts]
+
     # --- Representation ---
     def __repr__(self):
         return f"Array({self.data})"

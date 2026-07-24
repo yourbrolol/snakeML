@@ -6,7 +6,7 @@ from .stats import (
     sum_axis, mean_axis, variance_axis, max_axis,
 )
 from .ops import exp, log, sqrt, abs
-from .manipulation import concatenate, stack, split
+from .manipulation import concatenate, stack, split, unbind
 
 __all__ = [
     # rng
@@ -41,4 +41,5 @@ __all__ = [
     "concatenate",
     "stack",
     "split",
+    "unbind",
 ]

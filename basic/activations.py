@@ -40,3 +40,10 @@ class ReLU(Activation):
         """Compute backward pass for ReLU activation."""
         logger.debug("relu backward", grad=grad, input=self.input)
         return grad * (self.input > 0)
+
+class Softmax(Activation):
+    def __init__(self):
+        """Softmax activation layer."""
+        super().__init__("Softmax")
+    def forward(self, x, axis=-1):
+        pass
