@@ -42,8 +42,100 @@ class ReLU(Activation):
         return grad * (self.input > 0)
 
 class Softmax(Activation):
+    """Numerically stable softmax activation.
+
+    Applies softmax along *axis* (default: last axis).
+    Input / output shapes:
+      * 1-D (C,)    → (C,)
+      * 2-D (N, C)  → (N, C)  applied row-wise
+    """
+
     def __init__(self):
         """Softmax activation layer."""
         super().__init__("Softmax")
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _softmax_1d(row):
+        """Numerically stable softmax on a 1-D Array."""
+        m = row.max()           # subtract max to prevent exp overflow
+        e = (row - m).exp()
+        return e / e.sum()
+
+    @staticmethod
+    def _grad_1d(p, g):
+        """Jacobian–vector product for a single softmax output.
+
+        dx_i = p_i * (g_i - sum_j(g_j * p_j))
+        """
+        return p * (g - (p * g).sum())
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
     def forward(self, x, axis=-1):
-        pass
+        """Apply softmax along *axis*.
+
+        Parameters
+        ----------
+        x : Array
+            Logits of shape (C,) or (N, C).
+        axis : int
+            Axis along which softmax is computed (default -1, i.e. last).
+
+        Returns
+        -------
+        Array  same shape as x.
+        """
+        if not isinstance(x, Array):
+            x = Array(x)
+        self.input = x
+        logger.debug("softmax forward", activation=self.name, shape=x.shape)
+
+        if x.ndim == 1:
+            out = self._softmax_1d(x)
+        elif x.ndim == 2:
+            # apply row-wise along axis=1 (last axis)
+            out = Array.stack(
+                [self._softmax_1d(row) for row in x.unbind(axis=0)],
+                axis=0,
+            )
+        else:
+            raise ValueError(
+                f"Softmax supports 1-D and 2-D inputs, got shape {x.shape}"
+            )
+
+        self.output = out
+        logger.debug("softmax forward done", activation=self.name, shape=out.shape)
+        return out
+
+    def backward(self, grad):
+        """Compute gradient of softmax w.r.t. its input.
+
+        Uses the compact Jacobian–vector product form instead of the full
+        C×C Jacobian: dx = p * (g - dot(g, p))
+
+        Parameters
+        ----------
+        grad : Array
+            Upstream gradient, same shape as forward output.
+
+        Returns
+        -------
+        Array  same shape as grad.
+        """
+        if not isinstance(grad, Array):
+            grad = Array(grad)
+        p = self.output
+        logger.debug("softmax backward", activation=self.name)
+
+        if p.ndim == 1:
+            return self._grad_1d(p, grad)
+
+        return Array.stack(
+            [self._grad_1d(pi, gi)
+             for pi, gi in zip(p.unbind(axis=0), grad.unbind(axis=0))],
+            axis=0,
+        )
