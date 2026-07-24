@@ -1,3 +1,4 @@
+from matlib import exp
 from basic.layers import Layer
 from debug import get_logger
 from structs import Array
@@ -10,6 +11,7 @@ class Activation(Layer):
         super().__init__()
         self.name = name
         self.input = None
+        self.output = None
     def forward(self, x): raise NotImplementedError
     def backward(self, x): raise NotImplementedError
 
@@ -40,6 +42,40 @@ class ReLU(Activation):
         """Compute backward pass for ReLU activation."""
         logger.debug("relu backward", grad=grad, input=self.input)
         return grad * (self.input > 0)
+
+class Sigmoid(Activation):
+    def __init__(self):
+        """Sigmoid activation layer."""
+        super().__init__("Sigmoid")
+    def forward(self, x):
+        """Apply Sigmoid activation element-wise."""
+        self.input = x
+        logger.debug("sigmoid forward", value=x)
+        out = 1 / (1 + exp(-x))
+        self.output = out
+        return out if isinstance(out, Array) else Array([out])
+    def backward(self, grad):
+        """Compute backward pass for Sigmoid activation."""
+        logger.debug("sigmoid backward", grad=grad, input=self.input)
+        out = self.output
+        return grad * (out*(1-out))
+
+class Tanh(Activation):
+    def __init__(self):
+        """Tanh activation layer."""
+        super().__init__("Tanh")
+    def forward(self, x):
+        """Apply Tanh activation element-wise."""
+        self.input = x
+        logger.debug("tanh forward", value=x)
+        e_px, e_nx = exp(x), exp(-x)
+        out = (e_px-e_nx) / (e_px+e_nx)
+        self.output = out
+        return out if isinstance(out, Array) else Array([out])
+    def backward(self, grad):
+        """Compute backward pass for Tanh activation."""
+        logger.debug("tanh backward", grad=grad, input=self.input)
+        return grad * (1-(self.output**2))
 
 class Softmax(Activation):
     """Numerically stable softmax activation.

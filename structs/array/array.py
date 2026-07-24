@@ -154,6 +154,9 @@ class Array:
     def __truediv__(self, other): return self._elementwise(other, lambda x, y: x / y)
     def __rtruediv__(self, other): return self._elementwise(other, lambda x, y: y / x)
 
+    # --- Unary ---
+    def __neg__(self): return -1 * self
+
     # --- Comparison Operators ---
     def __gt__(self, other): return self._elementwise(other, lambda x, y: x > y)
     def __lt__(self, other): return self._elementwise(other, lambda x, y: x < y)
