@@ -1,7 +1,18 @@
 from .layers import Layer, Linear, Conv2D, MaxPool2D
 from .activations import Activation, LinearActivation, ReLU
 from .criterions import MSE
-from .initializers import Initializer, Constant, XavierNormal
+from .initializers import (
+    Initializer,
+    Constant,
+    Zeros,
+    Ones,
+    Normal,
+    Uniform,
+    XavierNormal,
+    XavierUniform,
+    KaimingUniform,
+    KaimingNormal,
+)
 from .optimizers import Optimizer, SGD
 from .nn import Sequential
 
@@ -16,7 +27,14 @@ __all__ = [
     "MSE",
     "Initializer",
     "Constant",
+    "Zeros",
+    "Ones",
+    "Normal",
+    "Uniform",
     "XavierNormal",
+    "XavierUniform",
+    "KaimingUniform",
+    "KaimingNormal",
     "Optimizer",
     "SGD",
     "Sequential",
