@@ -1,5 +1,5 @@
 from .layers import Layer, Linear, Conv2D, MaxPool2D
-from .activations import Activation, LinearActivation, ReLU
+from .activations import Activation, LinearActivation, ReLU, GELU, Sigmoid, Tanh, Softmax
 from .criterions import MSE
 from .initializers import (
     Initializer,
@@ -24,6 +24,10 @@ __all__ = [
     "Activation",
     "LinearActivation",
     "ReLU",
+    "GELU",
+    "Sigmoid",
+    "Tanh",
+    "Softmax",
     "MSE",
     "Initializer",
     "Constant",

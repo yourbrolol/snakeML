@@ -2,6 +2,7 @@ from matlib import exp, tanh
 from basic.layers import Layer
 from debug import get_logger
 from structs import Array
+from math import pi, sqrt
 
 logger = get_logger(__name__)
 
@@ -51,15 +52,25 @@ class GELU(Activation):
         """Apply GELU activation element-wise."""
         self.input = x
         logger.debug("gelu forward", value=x)
-        out = 0.5 * x * tanh(1 + (x / (2 ** 0.5)))
+        out = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x**3)))
         return out if isinstance(out, Array) else Array([out])
     def backward(self, grad):
         """Compute backward pass for GELU activation."""
         logger.debug("gelu backward", grad=grad, input=self.input)
+
         x = self.input
-        tanh_term = tanh(x / (2 ** 0.5))
+        k = (2 / pi) ** 0.5
+
+        u = k * (x + 0.044715 * x ** 3)
+        tanh_term = tanh(u)
         sech2_term = 1 - tanh_term ** 2
-        return grad * 0.5 * (1 + tanh_term + (x * sech2_term) / (2 ** 0.5))
+
+        gelu_grad = (
+            0.5 * (1 + tanh_term)
+            + 0.5 * x * sech2_term * k * (1 + 0.134145 * x ** 2)
+        )
+
+        return grad * gelu_grad
 
 class Sigmoid(Activation):
     def __init__(self):
