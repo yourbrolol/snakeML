@@ -1,4 +1,4 @@
-from matlib import exp
+from matlib import exp, tanh
 from basic.layers import Layer
 from debug import get_logger
 from structs import Array
@@ -42,6 +42,24 @@ class ReLU(Activation):
         """Compute backward pass for ReLU activation."""
         logger.debug("relu backward", grad=grad, input=self.input)
         return grad * (self.input > 0)
+
+class GELU(Activation):
+    def __init__(self):
+        """Gaussian Error Linear Unit activation layer."""
+        super().__init__("GELU")
+    def forward(self, x):
+        """Apply GELU activation element-wise."""
+        self.input = x
+        logger.debug("gelu forward", value=x)
+        out = 0.5 * x * tanh(1 + (x / (2 ** 0.5)))
+        return out if isinstance(out, Array) else Array([out])
+    def backward(self, grad):
+        """Compute backward pass for GELU activation."""
+        logger.debug("gelu backward", grad=grad, input=self.input)
+        x = self.input
+        tanh_term = tanh(x / (2 ** 0.5))
+        sech2_term = 1 - tanh_term ** 2
+        return grad * 0.5 * (1 + tanh_term + (x * sech2_term) / (2 ** 0.5))
 
 class Sigmoid(Activation):
     def __init__(self):

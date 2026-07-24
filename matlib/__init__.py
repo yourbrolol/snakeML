@@ -7,6 +7,7 @@ from .stats import (
 )
 from .ops import exp, log, sqrt, abs
 from .manipulation import concatenate, stack, split, unbind
+from .trig import tanh
 
 __all__ = [
     # rng
@@ -37,6 +38,8 @@ __all__ = [
     "log",
     "sqrt",
     "abs",
+    # trig
+    "tanh",
     # manipulation
     "concatenate",
     "stack",
