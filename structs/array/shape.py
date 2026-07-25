@@ -117,6 +117,20 @@ class ArrayShapeOps:
         new_axes = list(range(self.ndim))
         new_axes[axis1], new_axes[axis2] = new_axes[axis2], new_axes[axis1]
         return self.permute(*new_axes)
+    
+    def moveaxis(self, pos1, pos2):
+        """Moves an axis from position pos1 to position pos2."""
+        if pos1 < 0:
+            pos1 += self.ndim
+        if pos2 < 0:
+            pos2 += self.ndim
+        if pos1 < 0 or pos1 >= self.ndim or pos2 < 0 or pos2 >= self.ndim:
+            logger.error("invalid axes for moveaxis", pos1=pos1, pos2=pos2, ndim=self.ndim)
+            raise ShapeError(f"Axes {pos1} and {pos2} are out of bounds for array of dimension {self.ndim}.")
+        axes = list(range(self.ndim))
+        axes.pop(pos1)
+        axes.insert(pos2, pos1)
+        return self.permute(*axes)
 
     @property
     def T(self):
