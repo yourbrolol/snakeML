@@ -13,6 +13,81 @@ def _apply_unary(data, fn):
     return fn(data)
 
 
+def log2(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: math.log2(x))
+
+
+def log10(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: math.log10(x))
+
+
+def square(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: x * x)
+
+
+def sin(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.sin)
+
+
+def cos(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.cos)
+
+
+def tan(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.tan)
+
+
+def asin(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.asin)
+
+
+def acos(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.acos)
+
+
+def atan(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.atan)
+
+
+def sinh(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.sinh)
+
+
+def cosh(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.cosh)
+
+
+def tanh(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.tanh)
+
+
+def floor(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.floor)
+
+
+def ceil(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, math.ceil)
+
+
+def round(array, ndigits=None):
+    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: round(x, ndigits) if ndigits is not None else round(x))
+
+
+def clip(array, min_value=None, max_value=None):
+    def _clip_value(x):
+        if min_value is not None:
+            x = max(x, min_value)
+        if max_value is not None:
+            x = min(x, max_value)
+        return x
+
+    return _apply_unary(array.data if hasattr(array, "data") else array, _clip_value)
+
+
+def sign(array):
+    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: 1 if x > 0 else -1 if x < 0 else 0)
+
+
 def exp(array):
     """Element-wise natural exponential e^x.
 

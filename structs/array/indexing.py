@@ -51,6 +51,21 @@ def _getitem(array, _key, target=None, depth=0):
 
     head, *tail = key
 
+    if isinstance(head, (list, tuple)):
+        if all(isinstance(item, bool) for item in head):
+            if len(head) != len(target):
+                raise IndexError("boolean index length mismatch")
+            selected = [item for item, keep in zip(target, head) if keep]
+            if not tail:
+                return selected
+            return [_getitem(array, tuple(tail), item, depth + 1) for item in selected]
+
+        if all(isinstance(item, int) for item in head):
+            selected = [target[item] for item in head]
+            if not tail:
+                return selected
+            return [_getitem(array, tuple(tail), item, depth + 1) for item in selected]
+
     if isinstance(head, int):
         if not tail:
             return target[head]

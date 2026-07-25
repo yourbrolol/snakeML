@@ -117,7 +117,7 @@ class ArrayShapeOps:
         new_axes = list(range(self.ndim))
         new_axes[axis1], new_axes[axis2] = new_axes[axis2], new_axes[axis1]
         return self.permute(*new_axes)
-    
+
     def moveaxis(self, pos1, pos2):
         """Moves an axis from position pos1 to position pos2."""
         if pos1 < 0:
@@ -147,6 +147,123 @@ class ArrayShapeOps:
         if len(axes) == 1 and isinstance(axes[0], (tuple, list)):
             axes = tuple(axes[0])
         return self._wrap_result(linalg.permute(self, axes))
+
+    def transpose(self, *axes):
+        """Transpose the array. With no axes, swap the last two dimensions."""
+        if len(axes) == 1 and isinstance(axes[0], (tuple, list)):
+            axes = tuple(axes[0])
+        if not axes:
+            axes = tuple(range(self.ndim - 1, -1, -1))
+        return self.permute(*axes)
+
+    def expand_dims(self, axis=None):
+        """Insert singleton dimensions at the requested axis or at the end if None."""
+        if axis is None:
+            axis = self.ndim
+        if isinstance(axis, int):
+            axis = (axis,)
+        new_shape = list(self.shape)
+        for ax in sorted(axis, reverse=True):
+            if ax < 0:
+                ax += len(new_shape) + 1
+            if ax < 0 or ax > len(new_shape):
+                raise ShapeError(f"Axis {ax} is out of bounds for array of dimension {len(new_shape)}.")
+            new_shape.insert(ax, 1)
+        return self.reshape(tuple(new_shape))
+
+    def broadcast_to(self, shape):
+        """Broadcast the array to the requested shape using simple repetition semantics."""
+        target_shape = tuple(shape)
+        if not target_shape:
+            return self.__class__(self.data)
+
+        def _broadcast(data, src_shape, dst_shape):
+            if len(src_shape) < len(dst_shape):
+                src_shape = (1,) * (len(dst_shape) - len(src_shape)) + src_shape
+            if not dst_shape:
+                return data
+            if not isinstance(data, list):
+                return [_broadcast(data, src_shape[1:], dst_shape[1:]) for _ in range(dst_shape[0])]
+            if len(data) == 0:
+                return [_broadcast(0, src_shape[1:], dst_shape[1:]) for _ in range(dst_shape[0])]
+            if src_shape[0] == 1:
+                base = data[0] if len(data) else 0
+                return [_broadcast(base, src_shape[1:], dst_shape[1:]) for _ in range(dst_shape[0])]
+            if len(data) != src_shape[0]:
+                raise ShapeError(f"Cannot broadcast shape {src_shape} to {dst_shape}")
+            return [_broadcast(data[i], src_shape[1:], dst_shape[1:]) for i in range(dst_shape[0])]
+
+        return self.__class__(_broadcast(self.data, self.shape, target_shape))
+
+    def repeat(self, repeats, axis=None):
+        """Repeat elements along the requested axis."""
+        if axis is None:
+            axis = 0
+        if isinstance(repeats, int):
+            repeats = (repeats,)
+
+        def _repeat(data, current_axis):
+            if current_axis == axis:
+                if isinstance(data, list):
+                    return [item for item in data for _ in range(repeats[0])]
+                return data
+            if isinstance(data, list):
+                return [_repeat(item, current_axis + 1) for item in data]
+            return data
+
+        return self.__class__(_repeat(self.data, 0))
+
+    def tile(self, reps):
+        """Repeat the array along each dimension."""
+        if isinstance(reps, int):
+            reps = (reps,)
+
+        def _tile(data, current_dim):
+            if current_dim >= len(reps):
+                return data
+            if isinstance(data, list):
+                repeat_count = reps[current_dim]
+                repeated = [item for item in data for _ in range(repeat_count)]
+                return [_tile(item, current_dim + 1) for item in repeated]
+            return data
+
+        return self.__class__(_tile(self.data, 0))
+
+    def roll(self, shift, axis=None):
+        """Roll array elements along an axis."""
+        if axis is None:
+            flat = list(self._flatten())
+            shift %= len(flat)
+            return self.__class__(flat[-shift:] + flat[:-shift] if shift else flat)
+        if axis < 0:
+            axis += self.ndim
+        if axis < 0 or axis >= self.ndim:
+            raise ShapeError(f"Axis {axis} is out of bounds for array of dimension {self.ndim}.")
+        if self.ndim == 1:
+            values = list(self.data)
+            shift %= len(values)
+            return self.__class__(values[-shift:] + values[:-shift] if shift else values)
+        raise NotImplementedError("roll is only implemented for 1D arrays")
+
+    def pad(self, padding, mode="constant", value=0):
+        """Pad a 2D array with a constant value."""
+        if self.ndim != 2:
+            raise ValueError("pad currently supports 2D arrays only")
+        if isinstance(padding, int):
+            padding = (padding, padding)
+        if len(padding) != 2:
+            raise ValueError("padding must be an int or a pair")
+        top_bottom, left_right = padding
+        new_rows = len(self.data) + top_bottom + top_bottom
+        new_cols = len(self.data[0]) + left_right + left_right
+        result = []
+        for _ in range(top_bottom):
+            result.append([value] * new_cols)
+        for row in self.data:
+            result.append([value] * left_right + list(row) + [value] * left_right)
+        for _ in range(top_bottom):
+            result.append([value] * new_cols)
+        return self.__class__(result)
 
 
 __all__ = ["ArrayShapeOps"]

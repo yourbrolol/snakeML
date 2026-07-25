@@ -65,6 +65,66 @@ def max(flat):
     return result
 
 
+def min(flat):
+    """Returns the minimum value from a flat list."""
+    flat = list(flat)
+    if not flat:
+        logger.error("min called on empty collection")
+        raise ValidationError("min of empty array")
+    result = flat[0]
+    for v in flat[1:]:
+        if v < result:
+            result = v
+    return result
+
+
+def prod(flat):
+    """Returns the product of all values in a flat list."""
+    flat = list(flat)
+    result = 1
+    for value in flat:
+        result *= value
+    return result
+
+
+def argmax(flat):
+    """Returns the index of the maximum value in a flat list."""
+    flat = list(flat)
+    if not flat:
+        raise ValidationError("argmax of empty array")
+    best_idx = 0
+    best_value = flat[0]
+    for idx, value in enumerate(flat[1:], start=1):
+        if value > best_value:
+            best_idx = idx
+            best_value = value
+    return best_idx
+
+
+def argmin(flat):
+    """Returns the index of the minimum value in a flat list."""
+    flat = list(flat)
+    if not flat:
+        raise ValidationError("argmin of empty array")
+    best_idx = 0
+    best_value = flat[0]
+    for idx, value in enumerate(flat[1:], start=1):
+        if value < best_value:
+            best_idx = idx
+            best_value = value
+    return best_idx
+
+
+def count_nonzero(flat):
+    """Returns the number of non-zero entries in a flat list."""
+    return sum(1 for value in flat if value != 0)
+
+
+def norm(flat):
+    """Returns the L2 norm of a flat list."""
+    return math.sqrt(sum(value * value for value in flat))
+
+
 # ---------------------------------------------------------------------------
 # Axis-aware reductions
 # ---------------------------------------------------------------------------
@@ -147,3 +207,33 @@ def variance_axis(array, axis, keepdims=False):
 def max_axis(array, axis, keepdims=False):
     """Maximum value along a given axis."""
     return _reduce_axis(array, axis, max, keepdims=keepdims)
+
+
+def min_axis(array, axis, keepdims=False):
+    """Minimum value along a given axis."""
+    return _reduce_axis(array, axis, min, keepdims=keepdims)
+
+
+def prod_axis(array, axis, keepdims=False):
+    """Product along a given axis."""
+    return _reduce_axis(array, axis, prod, keepdims=keepdims)
+
+
+def argmax_axis(array, axis, keepdims=False):
+    """Argmax along a given axis."""
+    return _reduce_axis(array, axis, argmax, keepdims=keepdims)
+
+
+def argmin_axis(array, axis, keepdims=False):
+    """Argmin along a given axis."""
+    return _reduce_axis(array, axis, argmin, keepdims=keepdims)
+
+
+def count_nonzero_axis(array, axis, keepdims=False):
+    """Count of non-zero values along a given axis."""
+    return _reduce_axis(array, axis, count_nonzero, keepdims=keepdims)
+
+
+def norm_axis(array, axis, keepdims=False):
+    """L2 norm along a given axis."""
+    return _reduce_axis(array, axis, norm, keepdims=keepdims)

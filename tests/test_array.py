@@ -40,6 +40,29 @@ class ArrayTests(unittest.TestCase):
         self.assertAlmostEqual(outer_result[0][2], -2.28)
         self.assertEqual(mat.T.data, [[1, 3], [2, 4]])
 
+    def test_extended_array_helpers(self):
+        arr = Array([[1, 2], [3, 4]])
+        self.assertEqual(arr.shape, (2, 2))
+        self.assertEqual(arr.ndim, 2)
+        self.assertEqual(arr.size, 4)
+        self.assertEqual(arr.dtype, "int")
+        self.assertEqual(arr.tolist(), [[1, 2], [3, 4]])
+        self.assertEqual(arr.item(3), 4)
+        self.assertEqual(arr[[0, 1]].data, [[1, 2], [3, 4]])
+        self.assertEqual(arr[[True, False]].data, [[1, 2]])
+        self.assertEqual(arr.expand_dims(0).shape, (1, 2, 2))
+        self.assertEqual(arr.transpose().data, [[1, 3], [2, 4]])
+        self.assertEqual(arr.broadcast_to((3, 2, 2)).shape, (3, 2, 2))
+        self.assertEqual(arr.vstack(Array([[5, 6]])).data, [[1, 2], [3, 4], [5, 6]])
+        self.assertEqual(arr.hstack(Array([[5, 6]])).data, [[1, 2, 5, 6], [3, 4, 5, 6]])
+        self.assertEqual(arr.var(), 1.25)
+        self.assertEqual(arr.min(), 1)
+        self.assertEqual(arr.max(), 4)
+        self.assertEqual(arr.argmax(), 3)
+        self.assertEqual(arr.count_nonzero(), 4)
+        self.assertEqual(arr.clip(0, 2).data, [[1, 2], [2, 2]])
+        self.assertEqual(arr.sign().data, [[1, 1], [1, 1]])
+
 
 if __name__ == "__main__":
     unittest.main()
