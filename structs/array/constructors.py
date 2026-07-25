@@ -26,6 +26,30 @@ class ArrayConstructors:
             return [build(dim + 1) for _ in range(shape[dim])]
 
         return cls(build(0))
+    
+    @classmethod
+    def eye(cls, size, k=0):
+        """Creates an identity matrix of the given size."""
+        if not isinstance(size, int) or size <= 0:
+            logger.error("invalid size for eye", size=size)
+            raise ValidationError("Size must be a positive integer.")
+
+        def build(dim):
+            if dim == 2:
+                return 1 if build.row == build.col else 0
+            return [build(dim + 1) for _ in range(size)]
+
+        build.row = 0
+        build.col = 0
+        result = []
+        for i in range(size):
+            build.row = i
+            row = []
+            for j in range(size):
+                build.col = j
+                row.append(build(2))
+            result.append(row)
+        return cls(result)
 
     @classmethod
     def zeros(cls, shape):
