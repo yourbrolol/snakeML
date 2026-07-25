@@ -54,6 +54,12 @@ class ArrayMathOps:
 
     def __le__(self, other):
         return self._elementwise(other, lambda x, y: x <= y)
+    
+    def __eq__(self, other):
+        return self._elementwise(other, lambda x, y: x == y)
+    
+    def __abs__(self):
+        return self._wrap_result(matlib_ops.abs(self))
 
     def dot(self, other, axes=1):
         return self._wrap_result(linalg.tensordot(self, other, axes=axes))
