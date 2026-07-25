@@ -67,6 +67,11 @@ class ArrayUtilsOps:
         flat_array = self.__class__(list(self._flatten(self.data)))
         logger.debug("flattened array", original_shape=self.shape, flattened_shape=flat_array.shape)
         return flat_array
+    
+    def item(self, idx):
+        """Retrieve a single item from the array, ensuring the result is a scalar."""
+        result = self.flatten()[idx]
+        return result
 
     @property
     def size(self):
@@ -75,7 +80,7 @@ class ArrayUtilsOps:
         for dim in self.shape:
             total *= dim
         return total
-
+    
     @property
     def strides(self):
         """Returns the strides of the array, which indicate how many elements to skip to move along each axis."""

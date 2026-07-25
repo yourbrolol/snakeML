@@ -97,5 +97,3 @@ def _setitem(array, _key, value, target=None, depth=0):
                 _setitem(array, tail, value, child, depth + 1)
     else:
         _setitem(array, tail, value, target[head], depth + 1)
-
-
