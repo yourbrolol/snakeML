@@ -108,6 +108,46 @@ def concatenate(arrays, axis=0):
     )
     return result
 
+def flip(array, axis):
+    """Flip the array along the specified axis.
+
+    Parameters
+    ----------
+    array : Array
+        The input array to flip.
+    axis : int
+        The axis along which to flip the array.
+
+    Returns
+    -------
+    list
+        Nested list of the flipped result.
+
+    Examples
+    --------
+    ::
+
+        flip(a, axis=0)   # flip rows
+        flip(a, axis=1)   # flip columns
+    """
+    shape = _get_shape(array)
+    ndim = len(shape)
+    axis_norm = axis % ndim
+
+    result = zeroes(shape)
+
+    for idx in indices(shape):
+        flipped_idx = list(idx)
+        flipped_idx[axis_norm] = shape[axis_norm] - 1 - idx[axis_norm]
+        set_nested(result, idx, array[tuple(flipped_idx)])
+
+    logger.debug(
+        "flip completed",
+        axis=axis_norm,
+        in_shape=shape,
+        out_shape=shape,
+    )
+    return result
 
 # ---------------------------------------------------------------------------
 # Stack

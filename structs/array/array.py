@@ -76,6 +76,20 @@ class Array:
             return [build(dim + 1) for _ in range(shape[dim])]
         return cls(build(0))
     
+    @classmethod
+    def repeat(cls, value, shape):
+        """Creates an Array by repeating a given value to fill the specified shape."""
+        if isinstance(shape, int):
+            shape = (shape,)
+        if not isinstance(shape, (tuple, list)):
+            logger.error("invalid shape type for repeat", shape=shape)
+            raise ValidationError("Shape must be an int, tuple, or list.")
+        def build(dim):
+            if dim == len(shape):
+                return value
+            return [build(dim + 1) for _ in range(shape[dim])]
+        return cls(build(0))
+    
     # --- Utility Methods ---
     @classmethod
     def arange(cls, start, stop=None, step=1):
@@ -98,6 +112,20 @@ class Array:
             return cls([start])
         step = (stop - start) / (num - 1)
         return cls([start + i * step for i in range(num)])
+    
+    @classmethod
+    def tile(cls, value, reps):
+        """Creates an Array by repeating a given value along specified dimensions."""
+        if isinstance(reps, int):
+            reps = (reps,)
+        if not isinstance(reps, (tuple, list)):
+            logger.error("invalid reps type for tile", reps=reps)
+            raise ValidationError("Repetitions must be an int, tuple, or list.")
+        def build(dim):
+            if dim == len(reps):
+                return value
+            return [build(dim + 1) for _ in range(reps[dim])]
+        return cls(build(0))
 
     @staticmethod
     def wraparray(value):
@@ -185,6 +213,19 @@ class Array:
             return [build(dim + 1) for _ in range(shape[dim])]
 
         return Array(build(0))
+    
+    def flip(self, axis):
+        """Flips the array along the specified axis."""
+        if axis < 0:
+            axis += self.ndim
+        if axis < 0 or axis >= self.ndim:
+            logger.error("invalid axis for flip", axis=axis, ndim=self.ndim)
+            raise ShapeError(f"Axis {axis} is out of bounds for array of dimension {self.ndim}.")
+        return self._wrap_result(manipulation.flip(self, axis))
+    
+    def copy(self):
+        """Returns a deep copy of the array."""
+        return Array(self.data)
 
     def _unwrap(self, value):
         if isinstance(value, Array):
@@ -218,6 +259,50 @@ class Array:
         flat_array = Array(list(self._flatten(self.data)))
         logger.debug("flattened array", original_shape=self.shape, flattened_shape=flat_array.shape)
         return flat_array
+    
+    def squeeze(self, axis=None):
+        """Removes axes of size 1 from the array."""
+        if axis is None:
+            new_shape = tuple(dim for dim in self.shape if dim != 1)
+        else:
+            if isinstance(axis, int):
+                axis = (axis,)
+            new_shape = list(self.shape)
+            for ax in sorted(axis, reverse=True):
+                if new_shape[ax] != 1:
+                    logger.error("cannot squeeze axis with size > 1", axis=ax, size=new_shape[ax])
+                    raise ShapeError(f"Cannot squeeze axis {ax} with size {new_shape[ax]}.")
+                del new_shape[ax]
+            new_shape = tuple(new_shape)
+
+        return self.reshape(new_shape)
+    
+    def unsqueeze(self, axis):
+        """Adds a new axis of size 1 at the specified position."""
+        if isinstance(axis, int):
+            axis = (axis,)
+        new_shape = list(self.shape)
+        for ax in sorted(axis):
+            if ax < 0:
+                ax += len(new_shape) + 1
+            if ax < 0 or ax > len(new_shape):
+                logger.error("invalid axis for unsqueeze", axis=ax, current_shape=self.shape)
+                raise ShapeError(f"Axis {ax} is out of bounds for array of dimension {len(new_shape)}.")
+            new_shape.insert(ax, 1)
+        return self.reshape(tuple(new_shape))
+    
+    def swapaxes(self, axis1, axis2):
+        """Swaps two axes of the array."""
+        if axis1 < 0:
+            axis1 += self.ndim
+        if axis2 < 0:
+            axis2 += self.ndim
+        if axis1 < 0 or axis1 >= self.ndim or axis2 < 0 or axis2 >= self.ndim:
+            logger.error("invalid axes for swapaxes", axis1=axis1, axis2=axis2, ndim=self.ndim)
+            raise ShapeError(f"Axes {axis1} and {axis2} are out of bounds for array of dimension {self.ndim}.")
+        new_axes = list(range(self.ndim))
+        new_axes[axis1], new_axes[axis2] = new_axes[axis2], new_axes[axis1]
+        return self.permute(*new_axes)
 
     # --- Element-wise Operations Helper ---
     def _elementwise(self, other, op):
@@ -268,6 +353,24 @@ class Array:
         # General N-D: reverse all axes
         axes = list(range(self.ndim - 1, -1, -1))
         return self._wrap_result(linalg.permute(self, axes))
+    
+    @property
+    def size(self):
+        """Total number of elements in the array."""
+        total = 1
+        for dim in self.shape:
+            total *= dim
+        return total
+    
+    @property
+    def strides(self):
+        """Returns the strides of the array, which indicate how many elements to skip to move along each axis."""
+        if self.ndim == 0:
+            return ()
+        strides = [1] * self.ndim
+        for i in range(self.ndim - 2, -1, -1):
+            strides[i] = strides[i + 1] * self.shape[i + 1]
+        return tuple(strides)
 
     def permute(self, *axes):
         """Return a view with axes permuted.

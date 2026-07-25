@@ -6,7 +6,7 @@ from .stats import (
     sum_axis, mean_axis, variance_axis, max_axis,
 )
 from .ops import exp, log, sqrt, abs
-from .manipulation import concatenate, stack, split, unbind
+from .manipulation import concatenate, stack, split, unbind, flip
 from .trig import tanh
 
 __all__ = [
@@ -45,4 +45,5 @@ __all__ = [
     "stack",
     "split",
     "unbind",
+    "flip"
 ]
