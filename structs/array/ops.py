@@ -58,6 +58,18 @@ class ArrayMathOps:
     def __eq__(self, other):
         return self._elementwise(other, lambda x, y: x == y)
     
+    def __ne__(self, other):
+        return self._elementwise(other, lambda x, y: x != y)
+    
+    def __and__(self, other):
+        return self._elementwise(other, lambda x, y: x and y)
+    
+    def __or__(self, other):
+        return self._elementwise(other, lambda x, y: x or y)
+    
+    def __xor__(self, other):
+        return self._elementwise(other, lambda x, y: x ^ y)
+    
     def __abs__(self):
         return self._wrap_result(matlib_ops.abs(self))
 
@@ -78,6 +90,8 @@ class ArrayMathOps:
 
     def __pow__(self, other):
         return self._elementwise(other, lambda x, y: x ** y)
+    
+    # def __invert__(self): return self._wrap_result(matlib_ops.invert(self))
 
     def exp(self):
         return self._wrap_result(matlib_ops.exp(self))
