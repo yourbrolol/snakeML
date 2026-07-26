@@ -172,28 +172,52 @@ class ArrayShapeOps:
         return self.reshape(tuple(new_shape))
 
     def broadcast_to(self, shape):
-        """Broadcast the array to the requested shape using simple repetition semantics."""
+        """Broadcast the array to the requested shape."""
         target_shape = tuple(shape)
-        if not target_shape:
-            return self.__class__(self.data)
+        if len(target_shape) < self.ndim:
+            raise ShapeError(
+                f"Cannot broadcast shape {self.shape} to {target_shape}"
+            )
+        # Align source shape with target shape
+        src_shape = (1,) * (len(target_shape) - self.ndim) + self.shape
+        # Validate broadcasting rules
+        for s, t in zip(src_shape, target_shape):
+            if s != t and s != 1:
+                raise ShapeError(
+                    f"Cannot broadcast shape {self.shape} to {target_shape}"
+                )
 
         def _broadcast(data, src_shape, dst_shape):
-            if len(src_shape) < len(dst_shape):
-                src_shape = (1,) * (len(dst_shape) - len(src_shape)) + src_shape
             if not dst_shape:
                 return data
+            src_dim = src_shape[0]
+            dst_dim = dst_shape[0]
+            # Virtual leading dimension
+            if len(src_shape) > len(self.shape):
+                return [
+                    _broadcast(data, src_shape[1:], dst_shape[1:])
+                    for _ in range(dst_dim)
+                ]
+            # Scalar
             if not isinstance(data, list):
-                return [_broadcast(data, src_shape[1:], dst_shape[1:]) for _ in range(dst_shape[0])]
-            if len(data) == 0:
-                return [_broadcast(0, src_shape[1:], dst_shape[1:]) for _ in range(dst_shape[0])]
-            if src_shape[0] == 1:
-                base = data[0] if len(data) else 0
-                return [_broadcast(base, src_shape[1:], dst_shape[1:]) for _ in range(dst_shape[0])]
-            if len(data) != src_shape[0]:
-                raise ShapeError(f"Cannot broadcast shape {src_shape} to {dst_shape}")
-            return [_broadcast(data[i], src_shape[1:], dst_shape[1:]) for i in range(dst_shape[0])]
+                return [
+                    _broadcast(data, src_shape[1:], dst_shape[1:])
+                    for _ in range(dst_dim)
+                ]
+            # Broadcast singleton dimension
+            if src_dim == 1:
+                elem = data[0] if data else 0
+                return [
+                    _broadcast(elem, src_shape[1:], dst_shape[1:])
+                    for _ in range(dst_dim)
+                ]
+            # Shapes are equal (validated already)
+            return [
+                _broadcast(data[i], src_shape[1:], dst_shape[1:])
+                for i in range(src_dim)
+            ]
 
-        return self.__class__(_broadcast(self.data, self.shape, target_shape))
+        return self.__class__(_broadcast(self.data, src_shape, target_shape))
 
     def repeat(self, repeats, axis=None):
         """Repeat elements along the requested axis."""
@@ -248,11 +272,11 @@ class ArrayShapeOps:
     def pad(self, padding, mode="constant", value=0):
         """Pad a 2D array with a constant value."""
         if self.ndim != 2:
-            raise ValueError("pad currently supports 2D arrays only")
+            raise ShapeError("pad currently supports 2D arrays only")
         if isinstance(padding, int):
             padding = (padding, padding)
         if len(padding) != 2:
-            raise ValueError("padding must be an int or a pair")
+            raise ShapeError("padding must be an int or a pair")
         top_bottom, left_right = padding
         new_rows = len(self.data) + top_bottom + top_bottom
         new_cols = len(self.data[0]) + left_right + left_right

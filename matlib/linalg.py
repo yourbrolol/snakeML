@@ -71,10 +71,6 @@ def tensordot(a, b, axes=2):
         logger.error("tensordot axes length mismatch", axes_a=axes_a, axes_b=axes_b)
         raise ShapeError("Axes lengths differ.")
 
-#    for aa, bb in zip(axes_a, axes_b):
-#        if a.shape[aa] != b.shape[bb]:
-#            raise ValueError(f"Shape mismatch: {a.shape[aa]} != {b.shape[bb]}")
-
     free_a = [i for i in range(a.ndim) if i not in axes_a]
     free_b = [i for i in range(b.ndim) if i not in axes_b]
 

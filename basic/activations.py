@@ -3,6 +3,7 @@ from basic.layers import Layer
 from debug import get_logger
 from structs import Array
 from math import pi, sqrt
+from debug.errors import ShapeError
 
 logger = get_logger(__name__)
 
@@ -168,7 +169,7 @@ class Softmax(Activation):
                 axis=0,
             )
         else:
-            raise ValueError(
+            raise ShapeError(
                 f"Softmax supports 1-D and 2-D inputs, got shape {x.shape}"
             )
 
