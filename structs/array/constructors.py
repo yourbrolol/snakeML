@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from debug import get_logger
 from debug.errors import ValidationError
+from random import random, randint
 
 logger = get_logger(__name__)
 
@@ -33,22 +34,9 @@ class ArrayConstructors:
         if not isinstance(size, int) or size <= 0:
             logger.error("invalid size for eye", size=size)
             raise ValidationError("Size must be a positive integer.")
+        
+        result = [[1 if i == j else 0 for j in range(size)] for i in range(size)]
 
-        def build(dim):
-            if dim == 2:
-                return 1 if build.row == build.col else 0
-            return [build(dim + 1) for _ in range(size)]
-
-        build.row = 0
-        build.col = 0
-        result = []
-        for i in range(size):
-            build.row = i
-            row = []
-            for j in range(size):
-                build.col = j
-                row.append(build(2))
-            result.append(row)
         return cls(result)
 
     @classmethod
@@ -69,7 +57,6 @@ class ArrayConstructors:
     @classmethod
     def randn(cls, shape):
         """Creates an Array of the given shape filled with random floats in [0, 1)."""
-        import random
 
         if isinstance(shape, int):
             shape = (shape,)
@@ -79,7 +66,7 @@ class ArrayConstructors:
 
         def build(dim):
             if dim == len(shape):
-                return random.random()
+                return random()
             return [build(dim + 1) for _ in range(shape[dim])]
 
         return cls(build(0))
@@ -87,7 +74,6 @@ class ArrayConstructors:
     @classmethod
     def randint(cls, shape, low=0, high=10):
         """Creates an Array of the given shape filled with random integers."""
-        import random
 
         if isinstance(shape, int):
             shape = (shape,)
@@ -97,26 +83,15 @@ class ArrayConstructors:
 
         def build(dim):
             if dim == len(shape):
-                return random.randint(low, high - 1)
+                return randint(low, high - 1)
             return [build(dim + 1) for _ in range(shape[dim])]
 
         return cls(build(0))
 
     @classmethod
     def repeat(cls, value, shape):
-        """Creates an Array by repeating a given value to fill the specified shape."""
-        if isinstance(shape, int):
-            shape = (shape,)
-        if not isinstance(shape, (tuple, list)):
-            logger.error("invalid shape type for repeat", shape=shape)
-            raise ValidationError("Shape must be an int, tuple, or list.")
-
-        def build(dim):
-            if dim == len(shape):
-                return value
-            return [build(dim + 1) for _ in range(shape[dim])]
-
-        return cls(build(0))
+        """Creates an Array by repeating a given value to fill the specified shape (alias to full())."""
+        return cls.full(shape, fill_value=value)
 
     @classmethod
     def arange(cls, start, stop=None, step=1):
@@ -142,19 +117,14 @@ class ArrayConstructors:
 
     @classmethod
     def tile(cls, value, reps):
-        """Creates an Array by repeating a given value along specified dimensions."""
+        """Creates an Array by repeating a given value along specified dimensions (alias to full)."""
         if isinstance(reps, int):
             reps = (reps,)
         if not isinstance(reps, (tuple, list)):
             logger.error("invalid reps type for tile", reps=reps)
             raise ValidationError("Repetitions must be an int, tuple, or list.")
 
-        def build(dim):
-            if dim == len(reps):
-                return value
-            return [build(dim + 1) for _ in range(reps[dim])]
-
-        return cls(build(0))
+        return cls.full(reps, value)
 
 
 __all__ = ["ArrayConstructors"]
