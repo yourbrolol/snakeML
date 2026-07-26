@@ -121,7 +121,6 @@ class ArrayMathOps:
                 raise ShapeError(
                     f"inner: incompatible shapes {self.shape} and {other.shape}"
                 )
-            return sum(x * y for x, y in zip(self, other))
 
         return self.dot(other, axes=1)
 
@@ -139,9 +138,6 @@ class ArrayMathOps:
 
     def __pow__(self, other):
         return self._elementwise(other, lambda x, y: x ** y)
-
-    def neg(self):
-        return self._elementwise(0, lambda x, y: -x)
 
     def exp(self):
         return self._wrap_result(matlib_ops.exp(self))
@@ -227,54 +223,22 @@ class ArrayMathOps:
         return self.__class__([self[i][i] for i in range(min(self.shape))])
 
     def inverse(self):
-        if self.shape != (2, 2):
-            raise ShapeError("inverse is only implemented for 2x2 arrays")
-        a, b = self[0][0], self[0][1]
-        c, d = self[1][0], self[1][1]
-        det = a * d - b * c
-        if det == 0:
-            raise ShapeError("matrix is singular")
-        return self.__class__([[d / det, -b / det], [-c / det, a / det]])
+        return self._wrap_result(linalg.inverse(self))
 
     def det(self):
-        if self.shape != (2, 2):
-            raise ShapeError("det is only implemented for 2x2 arrays")
-        return self[0][0] * self[1][1] - self[0][1] * self[1][0]
+        return linalg.det(self)
 
     def solve(self, other):
-        if self.shape != (2, 2):
-            raise ShapeError("solve is only implemented for 2x2 arrays")
-        a, b = self[0][0], self[0][1]
-        c, d = self[1][0], self[1][1]
-        det = a * d - b * c
-        if det == 0:
-            raise ShapeError("matrix is singular")
-        other_data = other.data if hasattr(other, "data") else other
-        if isinstance(other_data, list) and not isinstance(other_data[0], list):
-            return self.__class__([((d * other_data[0] - b * other_data[1]) / det), ((-c * other_data[0] + a * other_data[1]) / det)])
-        raise ShapeError("solve currently expects a 2-element vector")
+        return linalg.solve(self, other)
 
     def pinv(self):
-        return self.inverse()
+        return linalg.inverse(self)
 
     def cholesky(self):
-        if self.shape != (2, 2):
-            raise ShapeError("cholesky is only implemented for 2x2 arrays")
-        a, b = self[0][0], self[0][1]
-        c = self[1][1]
-        if a <= 0:
-            raise ShapeError("matrix must be positive-definite")
-        l11 = math.sqrt(a)
-        l21 = b / l11
-        l22 = math.sqrt(c - l21 * l21)
-        return self.__class__([[l11, 0], [l21, l22]])
+        return linalg.cholesky(self)
 
     def cross(self, other):
-        if self.ndim != 1 or getattr(other, "ndim", 0) != 1:
-            raise ShapeError("cross requires 1D vectors")
-        a, b, c = self[0], self[1], self[2]
-        d, e, f = other[0], other[1], other[2]
-        return self.__class__([b * f - c * e, c * d - a * f, a * e - b * d])
+        return linalg.cross(self, other)
 
     def svd(self):
         raise NotImplementedError("svd is not implemented yet")

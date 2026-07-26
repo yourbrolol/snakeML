@@ -1,5 +1,5 @@
 from .rng import normal
-from .linalg import transpose, permute, tensordot, matvec, matmul, outer
+from .linalg import det, inverse, cross, solve, transpose, permute, tensordot, matvec, matmul, outer, cholesky
 from .broadcasting import broadcast, elementwise
 from .stats import (
     sum, mean, std, variance, max,
@@ -13,12 +13,17 @@ __all__ = [
     # rng
     "normal",
     # linalg
+    "det",
+    "inverse",
     "transpose",
     "permute",
     "tensordot",
     "matvec",
     "matmul",
     "outer",
+    "solve",
+    "cross",
+    "cholesky",
     # broadcasting
     "broadcast",
     "elementwise",
