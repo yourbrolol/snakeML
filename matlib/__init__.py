@@ -5,9 +5,8 @@ from .stats import (
     sum, mean, std, variance, max,
     sum_axis, mean_axis, variance_axis, max_axis,
 )
-from .ops import exp, log, sqrt, abs
+from .ops import exp, log, sqrt, abs, tan, sin, cos, asin, acos, atan, sinh, cosh, tanh
 from .manipulation import concatenate, stack, split, unbind, flip
-from .trig import tanh
 
 __all__ = [
     # rng
@@ -43,7 +42,14 @@ __all__ = [
     "log",
     "sqrt",
     "abs",
-    # trig
+    "tan",
+    "sin",
+    "cos",
+    "asin",
+    "acos",
+    "atan",
+    "sinh",
+    "cosh",
     "tanh",
     # manipulation
     "concatenate",

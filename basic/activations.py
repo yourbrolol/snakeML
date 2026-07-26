@@ -1,4 +1,4 @@
-from matlib import exp, tanh
+from matlib import exp
 from basic.layers import Layer
 from debug import get_logger
 from structs import Array
@@ -53,7 +53,7 @@ class GELU(Activation):
         """Apply GELU activation element-wise."""
         self.input = x
         logger.debug("gelu forward", value=x)
-        out = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x**3)))
+        out = 0.5 * x * (1 + (sqrt(2/pi) * (x + 0.044715 * x**3)).tanh())
         return out if isinstance(out, Array) else Array([out])
     def backward(self, grad):
         """Compute backward pass for GELU activation."""
@@ -63,7 +63,7 @@ class GELU(Activation):
         k = (2 / pi) ** 0.5
 
         u = k * (x + 0.044715 * x ** 3)
-        tanh_term = tanh(u)
+        tanh_term = u.tanh()
         sech2_term = 1 - tanh_term ** 2
 
         gelu_grad = (
@@ -81,7 +81,7 @@ class Sigmoid(Activation):
         """Apply Sigmoid activation element-wise."""
         self.input = x
         logger.debug("sigmoid forward", value=x)
-        out = 1 / (1 + exp(-x))
+        out = 1 / (1 + -x.exp())
         self.output = out
         return out if isinstance(out, Array) else Array([out])
     def backward(self, grad):
@@ -98,7 +98,7 @@ class Tanh(Activation):
         """Apply Tanh activation element-wise."""
         self.input = x
         logger.debug("tanh forward", value=x)
-        e_px, e_nx = exp(x), exp(-x)
+        e_px, e_nx = x.exp(), (-x).exp()
         out = (e_px-e_nx) / (e_px+e_nx)
         self.output = out
         return out if isinstance(out, Array) else Array([out])
