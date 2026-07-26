@@ -25,7 +25,7 @@ class ArrayShapeOps:
         if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
             shape = tuple(shape[0])
 
-        flat = list(self._flatten())
+        flat = list(self.flatten())
         total = len(flat)
 
         if shape.count(-1) > 1:
@@ -256,7 +256,7 @@ class ArrayShapeOps:
     def roll(self, shift, axis=None):
         """Roll array elements along an axis."""
         if axis is None:
-            flat = list(self._flatten())
+            flat = list(self.flatten())
             shift %= len(flat)
             return self.__class__(flat[-shift:] + flat[:-shift] if shift else flat)
         if axis < 0:

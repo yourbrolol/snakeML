@@ -52,13 +52,17 @@ class ArrayUtilsOps:
             return [self._unwrap(item) for item in value]
         return value
 
+    # Deprecated.
     def _wrap_result(self, result):
         if isinstance(result, list):
             return self.__class__(result)
         return result
-
-    def _indices(self):
-        return struct_utils.indices(self.shape)
+    
+    def _wrap(self, value):
+        """Wraps a value in an Array if it's not already one."""
+        if isinstance(value, self.__class__):
+            return value
+        return self.__class__(value)
 
     def indices(self, shape=None):
         return struct_utils.indices(self.shape if shape is None else shape)
@@ -236,12 +240,12 @@ class ArrayUtilsOps:
 
     def take(self, indices):
         """Select values from a flat view of the array."""
-        flat = list(self._flatten())
+        flat = list(self.flatten())
         return self.__class__([flat[i] for i in indices])
 
     def put(self, indices, values):
         """Assign values to flat positions in the array."""
-        flat = list(self._flatten())
+        flat = list(self.flatten())
         for idx, value in zip(indices, values):
             flat[idx] = value
         self.data = self._restore_from_flat(flat, self.shape)
@@ -270,7 +274,7 @@ class ArrayUtilsOps:
 
     def unique(self):
         """Return the unique values in the flattened array."""
-        values = list(self._flatten())
+        values = list(self.flatten())
         seen = []
         for value in values:
             if value not in seen:
@@ -279,24 +283,24 @@ class ArrayUtilsOps:
 
     def sort(self, axis=-1):
         """Sort the flattened values and return a new array."""
-        values = sorted(list(self._flatten()))
+        values = sorted(list(self.flatten()))
         return self.__class__(values)
 
     def argsort(self, axis=-1):
         """Return the indices that would sort the flattened values."""
-        values = list(self._flatten())
+        values = list(self.flatten())
         return self.__class__(sorted(range(len(values)), key=lambda idx: values[idx]))
 
     def searchsorted(self, value, side="left"):
         """Return the insertion index for a value in a sorted 1D array."""
-        values = list(self._flatten())
+        values = list(self.flatten())
         if side == "right":
             return bisect_right(values, value)
         return bisect_left(values, value)
 
     def shuffle(self):
         """Shuffle a flat view of the array in-place."""
-        flat = list(self._flatten())
+        flat = list(self.flatten())
         random.shuffle(flat)
         self.data = self._restore_from_flat(flat, self.shape)
         self.shape = self._get_shape(self.data)
@@ -305,20 +309,20 @@ class ArrayUtilsOps:
 
     def permutation(self):
         """Return a shuffled copy of the flattened array."""
-        flat = list(self._flatten())
+        flat = list(self.flatten())
         shuffled = list(flat)
         random.shuffle(shuffled)
         return self.__class__(shuffled)
 
     def choice(self, size=None):
         """Return a random choice from the flattened array."""
-        flat = list(self._flatten())
+        flat = list(self.flatten())
         if size is None:
             return random.choice(flat)
         return self.__class__([random.choice(flat) for _ in range(size)])
 
     def __contains__(self, item):
-        return item in list(self._flatten())
+        return item in list(self.flatten())
 
     def __str__(self):
         return repr(self)

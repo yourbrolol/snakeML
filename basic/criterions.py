@@ -125,7 +125,7 @@ class CrossEntropy(Loss):
                 eps = 1e-12
                 log_probs = (y_pred + eps).log()
                 nll = y_true * log_probs          # element-wise
-                loss = -nll.sum() / len(list(y_pred._flatten()))
+                loss = -nll.sum() / len(list(y_pred.flatten()))
             except Exception as e:
                 logger.error("forward computation error: %s", e)
                 raise
@@ -161,7 +161,7 @@ class CrossEntropy(Loss):
                 logger.error("backward input conversion failed: %s", e)
                 raise
 
-            n = len(list(y_pred._flatten()))
+            n = len(list(y_pred.flatten()))
             grad = (y_pred - y_true) / n
             logger.debug("backward grad: %s", describe(grad))
             return grad
