@@ -13,7 +13,7 @@ class ArrayConstructors:
     """Mixin providing constructor-style Array methods."""
 
     @classmethod
-    def full(cls, shape, fill_value=0):
+    def full(cls, shape, value=0):
         """Creates an Array of the given shape filled with a specified value."""
         if isinstance(shape, int):
             shape = (shape,)
@@ -23,7 +23,7 @@ class ArrayConstructors:
 
         def build(dim):
             if dim == len(shape):
-                return fill_value
+                return value if not callable(value) else value()
             return [build(dim + 1) for _ in range(shape[dim])]
 
         return cls(build(0))
