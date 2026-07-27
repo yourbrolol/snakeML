@@ -42,17 +42,17 @@ class ArrayConstructors:
     @classmethod
     def zeros(cls, shape):
         """Creates an Array of the given shape filled with zeros."""
-        return cls.full(shape, fill_value=0)
+        return cls.full(shape, value=0)
 
     @classmethod
     def ones(cls, shape):
         """Creates an Array of the given shape filled with ones."""
-        return cls.full(shape, fill_value=1)
+        return cls.full(shape, value=1)
 
     @classmethod
     def empty(cls, shape):
         """Creates an Array of the given shape without initializing values."""
-        return cls.full(shape, fill_value=None)
+        return cls.full(shape, value=None)
 
     @classmethod
     def randn(cls, shape):
@@ -91,7 +91,7 @@ class ArrayConstructors:
     @classmethod
     def repeat(cls, value, shape):
         """Creates an Array by repeating a given value to fill the specified shape (alias to full())."""
-        return cls.full(shape, fill_value=value)
+        return cls.full(shape, value=value)
 
     @classmethod
     def arange(cls, start, stop=None, step=1):

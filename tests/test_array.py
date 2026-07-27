@@ -2,6 +2,7 @@ import math
 import unittest
 
 from structs.array.array import Array
+from basic.transformers import Embedding
 
 from debug.errors import ShapeError, ValidationError
 
@@ -40,6 +41,22 @@ class ArrayTests(unittest.TestCase):
         self.assertAlmostEqual(outer_result[0][1], -1.52)
         self.assertAlmostEqual(outer_result[0][2], -2.28)
         self.assertEqual(mat.T.data, [[1, 3], [2, 4]])
+
+    def test_embedding_backward_accumulates_selected_rows(self):
+        layer = Embedding(5, 3)
+        layer.params['w'].data = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0], [10.0, 11.0, 12.0], [13.0, 14.0, 15.0]]
+
+        grad = Array([[0.5, -0.25, 0.75], [1.0, 0.0, -0.5]])
+        layer.backward(grad)
+
+        self.assertEqual(layer.grads['w'][1].data, [1.0, 0.0, -0.5])
+        self.assertEqual(layer.grads['w'][0].data, [0.5, -0.25, 0.75])
+
+        second_grad = Array([[-0.1, 0.2, 0.3]])
+        layer.backward(second_grad)
+
+        self.assertEqual(layer.grads['w'][1].data, [0.9, 0.2, -0.2])
+        self.assertEqual(layer.grads['w'][0].data, [0.5, -0.25, 0.75])
 
     def test_extended_array_helpers(self):
         arr = Array([[1, 2], [3, 4]])

@@ -22,6 +22,8 @@ def _normalize_key(ndim, _key):
 
     if len(cleaned) < ndim:
         cleaned.extend([slice(None)] * (ndim - len(cleaned)))
+    
+    logger.debug("normalized key", cleaned=cleaned)
 
     return tuple(cleaned)
 
@@ -100,8 +102,29 @@ def _setitem(array, _key, value, target=None, depth=0):
         return
 
     head, tail = key[0], key[1:]
-
-    if isinstance(head, slice):
+    
+    if isinstance(head, (list, tuple)):
+        if all(isinstance(item, bool) for item in head):
+            if len(head) != len(target):
+                raise IndexError("boolean index length mismatch")
+            selected_indices = [i for i, keep in enumerate(head) if keep]
+            if isinstance(value, list):
+                for idx, val in zip(selected_indices, value):
+                    _setitem(array, tail, val, target[idx], depth + 1)
+            else:
+                for idx in selected_indices:
+                    _setitem(array, tail, value, target[idx], depth + 1)
+        elif all(isinstance(item, int) for item in head):
+            if isinstance(value, list):
+                for idx, val in zip(head, value):
+                    _setitem(array, tail, val, target[idx], depth + 1)
+            else:
+                for idx in head:
+                    _setitem(array, tail, value, target[idx], depth + 1)
+        else:
+            logger.error("unsupported index type in list/tuple", index_type=type(head).__name__)
+            raise TypeMismatchError(f"Unsupported index type in list/tuple: {type(head).__name__}")
+    elif isinstance(head, slice):
         children = target[head]
         if isinstance(value, list):
             for i, child in enumerate(children):
