@@ -59,32 +59,21 @@ class LayerNorm(Layer):
         dX = self.inv_std * (dx_hat - mean1 - self.x_hat * mean2)
         return dX
 
+class Residual(Layer):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+    def forward(self, x, fx=None):
+        self.input = x
+        if fx is None: fx = self.fn.forward(x)
+        return x + fx
+    def backward(self, grad): return grad + self.fn.backward(grad)
+
 if __name__ == "__main__":
-    ctx_len = 4
-    d_model = 3
-
-    table = [
-        [1, 2, 3],
-        [4, 5, 6],
-        [7, 8, 9],
-        [10, 11, 12],
-    ]
-
-    layer = PosEmbedding(ctx_len, d_model, table)
-
-    x = Array([
-        [10, 20, 30],
-        [40, 50, 60],
-    ])
-
-    pos_x = [1, 3]
-
-    y = layer.forward(x, pos_x)
-
-    print(y)
-    
-    grad = layer.backward(Array([[1,1,1], [2,2,2]]))
-    opt = SGD([layer])
-    opt.step()
-    
-    print(layer.params)
+    from basic.layers import Linear
+    x = 5
+    lin = Linear(1, 1)
+    res = Residual(lin)
+    y1 = lin.forward(x)
+    y2 = res.forward(x, y1)
+    print(y1, y2)

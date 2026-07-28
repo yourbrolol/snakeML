@@ -27,7 +27,7 @@ class Linear(Layer):
             from basic.initializers import XavierNormal
             initializer = XavierNormal()
         self.params['w'] = initializer([output_dim, input_dim], input_dim, output_dim)
-        self.params['b'] = Constant()([output_dim])
+        self.params['b'] = Constant()(0, [output_dim])
     def forward(self, input_data):
         """Compute the forward pass for the linear transformation."""
         self.input = Array(input_data) if not isinstance(input_data, Array) else input_data
