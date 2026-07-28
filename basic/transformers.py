@@ -18,6 +18,22 @@ class Embedding(Layer):
             self.grads["w"][token] += g
         return None
 
+class PosEmbedding(Layer):
+    def __init__(self, ctx_len, d_model, table=None):
+        super().__init__()
+        if table is not None:
+            self.params['w'] = Array.wraparray(table)
+        else:
+            self.params['w'] = Array.randn((ctx_len, d_model))
+        self.grads['w'] = Array.zeros((ctx_len, d_model))
+    def forward(self, x, pos_x):
+        self.input = pos_x
+        return x + self.params['w'][pos_x]
+    def backward(self, grad):
+        for pos, g in zip(self.input, grad):
+            self.grads["w"][pos] += g
+        return grad
+
 class LayerNorm(Layer):
     def __init__(self, input_size):
         super().__init__()
@@ -44,10 +60,31 @@ class LayerNorm(Layer):
         return dX
 
 if __name__ == "__main__":
-    norm = LayerNorm(3)
-    opt = SGD([norm], lr=0.01)
-    x = [1.0, 2.0, 3.0]
-    print(norm.forward(x))
-    norm.backward(Array([0.1, 0.2, 0.3]))
+    ctx_len = 4
+    d_model = 3
+
+    table = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+        [10, 11, 12],
+    ]
+
+    layer = PosEmbedding(ctx_len, d_model, table)
+
+    x = Array([
+        [10, 20, 30],
+        [40, 50, 60],
+    ])
+
+    pos_x = [1, 3]
+
+    y = layer.forward(x, pos_x)
+
+    print(y)
+    
+    grad = layer.backward(Array([[1,1,1], [2,2,2]]))
+    opt = SGD([layer])
     opt.step()
-    print(norm.params['w'], norm.params['b'])
+    
+    print(layer.params)
