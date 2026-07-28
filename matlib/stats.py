@@ -189,8 +189,38 @@ def _reduce_axis(array, axis, reduce_fn, keepdims=False):
     return result
 
 
-def sum_axis(array, axis, keepdims=False):
-    """Sum along a given axis."""
+def sum_axis(array, axis=None, keepdims=False):
+    """Sum along a given axis or axes."""
+
+    # Sum all elements
+    if axis is None:
+        # reduce every axis from last to first
+        result = array
+        for ax in reversed(range(array.ndim)):
+            result = _reduce_axis(
+                result,
+                ax,
+                _sum_values,
+                keepdims=keepdims
+            )
+        return result
+
+    # Multiple axes
+    if isinstance(axis, tuple):
+        result = array
+
+        # Reduce highest axes first so indices don't shift
+        for ax in sorted(axis, reverse=True):
+            result = _reduce_axis(
+                result,
+                ax,
+                _sum_values,
+                keepdims=keepdims
+            )
+
+        return result
+
+    # Single axis
     return _reduce_axis(array, axis, _sum_values, keepdims=keepdims)
 
 

@@ -52,7 +52,16 @@ def elementwise(a, b, op):
 
     # both lists: recurse element-wise; require same shape or zip will truncate
     if isinstance(a, list) and isinstance(b, list):
-        return [elementwise(item_a, item_b, op) for item_a, item_b in zip(a, b)]
+        if len(a) == len(b):
+            return [elementwise(x, y, op) for x, y in zip(a, b)]
+
+        if len(a) == 1:
+            return [elementwise(a[0], y, op) for y in b]
+
+        if len(b) == 1:
+            return [elementwise(x, b[0], op) for x in a]
+
+        raise ValueError("Shapes cannot be broadcast")
 
     # one side is list: broadcast scalar across list
     if isinstance(a, list):
