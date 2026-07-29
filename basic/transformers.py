@@ -79,6 +79,11 @@ class Attention(Layer):
             "K": Array.randn((d_model, d_model)),
             "V": Array.randn((d_model, d_model)),
         }
+        self.grads['w'] = {
+            "Q": Array.randn((d_model, d_model)),
+            "K": Array.randn((d_model, d_model)),
+            "V": Array.randn((d_model, d_model)),
+        }
         self.d_model = d_model
         self.softmax = Softmax()
     def forward(self, X):
@@ -106,5 +111,6 @@ class Attention(Layer):
         return dX
 
 if __name__ == "__main__":
-    att = Attention(32, 32)
-    print(att.forward(Array.randn((32, 32))))
+    att = Attention(4, 4)
+    print(att.forward(Array.randn((4, 4))))
+    print(att.backward(Array.randn((4, 4))))
