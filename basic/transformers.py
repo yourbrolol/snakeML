@@ -96,10 +96,10 @@ class Attention(Layer):
     def backward(self, grad):
         dA = grad @ self.V.T
         dV = self.attention.T @ grad
-        dS = grad @ self.softmax.backward(dA)
+        dS = self.softmax.backward(dA)
         dScores = dS / math.sqrt(self.d_model)
         dQ = dScores @ self.K
-        dK = dScores.T * self.Q
+        dK = dScores.T @ self.Q
         dXq = dQ @ self.params['w']["Q"].T
         dWq = self.input.T @ dQ
         dXk = dK @ self.params['w']["K"].T
@@ -107,10 +107,10 @@ class Attention(Layer):
         dXv = dV @ self.params['w']["V"].T
         dWv = self.input.T @ dV
         dX = dXq + dXk + dXv
-        self.grads['w']["Q"], self.grads['w']["K"], self.grads['w']["V"] = dWv, dWk, dWv
+        self.grads['w']["Q"], self.grads['w']["K"], self.grads['w']["V"] = dWq, dWk, dWv
         return dX
 
 if __name__ == "__main__":
-    att = Attention(4, 4)
-    print(att.forward(Array.randn((4, 4))))
-    print(att.backward(Array.randn((4, 4))))
+    att = Attention(3, 4)
+    print(att.forward(Array.randn((3, 4))))
+    print(att.backward(Array.randn((3, 4))))
