@@ -1,4 +1,5 @@
 from debug import get_logger
+from structs import Array
 
 logger = get_logger(__name__)
 
