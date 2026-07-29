@@ -1,6 +1,8 @@
 from .layers import Layer
 from structs import Array
 from basic.optimizers import SGD
+from basic.activations import Softmax
+import math
 
 class Embedding(Layer):
     def __init__(self, vocab_size, d_model, table=None):
@@ -69,11 +71,25 @@ class Residual(Layer):
         return x + fx
     def backward(self, grad): return grad + self.fn.backward(grad)
 
+class Attention(Layer):
+    def __init__(self, window_size, d_model):
+        super().__init__()
+        self.params['w'] = {
+            "Q": Array.randn((d_model, d_model)),
+            "K": Array.randn((d_model, d_model)),
+            "V": Array.randn((d_model, d_model)),
+        }
+        self.d_model = d_model
+    def forward(self, X):
+        Wq, Wk, Wv = self.params['w']["Q"], self.params['w']["K"], self.params['w']["V"]
+        Q, K, V = X @ Wq, X @ Wk, X @ Wv
+        scores = ((Q @ K.T) / math.sqrt(self.d_model))
+        attention = Softmax().forward(scores)
+        self.input, self.Q, self.K, self.V, self.scores, self.attention = X, Q, K, V, scores, attention
+        return attention @ V
+    def backward(self, grad):
+        pass
+
 if __name__ == "__main__":
-    from basic.layers import Linear
-    x = 5
-    lin = Linear(1, 1)
-    res = Residual(lin)
-    y1 = lin.forward(x)
-    y2 = res.forward(x, y1)
-    print(y1, y2)
+    att = Attention(32, 32)
+    print(att.forward(Array.randn((32, 32))))
