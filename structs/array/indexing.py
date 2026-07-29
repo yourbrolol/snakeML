@@ -39,7 +39,32 @@ def _coerce_value(value):
     return value
 
 
-def _getitem(array, _key, target=None, depth=0):
+def _getitem(array, key, plain=False):
+    key = _normalize_key(array.ndim, key)
+    offset, shape, strides = array.offset, [], []
+    ax = 0
+    for idx in key:
+        stride = array.strides[ax]
+        size = array.shape[ax]
+        if isinstance(idx, int):
+            if idx < 0: idx += size
+            offset += idx * stride
+        elif isinstance(idx, slice):
+            start, stop, step = idx.indices(size)
+            offset += start * stride
+            shape.append(((stop - start + step - 1) // step))
+            strides.append(stride * step)
+        ax += 1
+    if not plain:
+        return [
+            array.data,
+            shape,
+            strides,
+            offset
+        ]
+    else: raise NotImplementedError
+
+def __getitem(array, _key, target=None, depth=0):
     """Recursively retrieve items or slices from nested array list data."""
     if depth == 0:
         key = _normalize_key(array.ndim, _key)

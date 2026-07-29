@@ -37,6 +37,14 @@ class ArrayUtilsOps:
             return (0,)
         return (len(data),) + self._get_shape(data[0])
 
+    def _strides(self, shape):
+        strides = [1] * len(shape)
+        acc = 1
+        for i in range(len(shape)-1, -1, -1):
+            strides[i] = acc
+            acc *= shape[i]
+        return tuple(strides)
+
     def copy(self):
         """Returns a deep copy of the array."""
         return self.__class__(copy.deepcopy(self.data))

@@ -7,10 +7,17 @@ logger = get_logger(__name__)
 
 
 class Array(ArrayMixins):
-    def __init__(self, values):
+    def __init__(self, values, raw=False, shape=None, strides=None, offset=None):
         """Initializes the array with a nested or flat list/tuple."""
-        self.data = self._to_list(values)
-        self.shape = self._get_shape(self.data)
+        if not raw:
+            self.data = self._flatten(values)
+            self.shape = self._get_shape(values)
+            self.strides = self._strides(values)
+        else:
+            self.data = values
+            self.shape = shape
+            self.strides = strides
+            self.offset = offset
         self.ndim = len(self.shape)
 
     def __len__(self):
@@ -29,9 +36,15 @@ class Array(ArrayMixins):
     def __setitem__(self, key, value):
         indexing._setitem(self, key, value)
 
-    def __repr__(self):
-        return f"Array({self.data})"
+    def _repr(self, dim, offset):
+        parts = []
+        for i in range(self.shape[self.ndim]):
+            _offset = offset + i * self.strides[dim]
+            parts.append(self._repr(dim+1, _offset))
+        return "[" + ", ".join(parts) + "]"
 
+    def __repr__(self):
+        self._repr
 
 if __name__ == "__main__":
     a = Array([[1, 2], [3, 4]])
