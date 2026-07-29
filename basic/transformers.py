@@ -80,15 +80,30 @@ class Attention(Layer):
             "V": Array.randn((d_model, d_model)),
         }
         self.d_model = d_model
+        self.softmax = Softmax()
     def forward(self, X):
         Wq, Wk, Wv = self.params['w']["Q"], self.params['w']["K"], self.params['w']["V"]
         Q, K, V = X @ Wq, X @ Wk, X @ Wv
         scores = ((Q @ K.T) / math.sqrt(self.d_model))
-        attention = Softmax().forward(scores)
+        attention = self.softmax.forward(scores)
         self.input, self.Q, self.K, self.V, self.scores, self.attention = X, Q, K, V, scores, attention
         return attention @ V
     def backward(self, grad):
-        pass
+        dA = grad @ self.V.T
+        dV = self.attention.T @ grad
+        dS = grad @ self.softmax.backward(dA)
+        dScores = dS / math.sqrt(self.d_model)
+        dQ = dScores @ self.K
+        dK = dScores.T * self.Q
+        dXq = dQ @ self.params['w']["Q"].T
+        dWq = self.input.T @ dQ
+        dXk = dK @ self.params['w']["K"].T
+        dWk = self.input.T @ dK
+        dXv = dV @ self.params['w']["V"].T
+        dWv = self.input.T @ dV
+        dX = dXq + dXk + dXv
+        self.grads['w']["Q"], self.grads['w']["K"], self.grads['w']["V"] = dWv, dWk, dWv
+        return dX
 
 if __name__ == "__main__":
     att = Attention(32, 32)
