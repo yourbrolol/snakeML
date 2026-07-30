@@ -110,6 +110,14 @@ class Attention(Layer):
         self.grads['w']["Q"], self.grads['w']["K"], self.grads['w']["V"] = dWq, dWk, dWv
         return dX
 
+class MHAttention(Layer):
+    def __init__(self):
+        super().__init__()
+    def forward(self, x):
+        pass
+    def backward(self, grad):
+        pass
+
 if __name__ == "__main__":
     att = Attention(3, 4)
     print(att.forward(Array.randn((3, 4))))
