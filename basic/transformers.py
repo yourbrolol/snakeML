@@ -111,14 +111,65 @@ class Attention(Layer):
         return dX
 
 class MHAttention(Layer):
-    def __init__(self):
+    def __init__(self, window_len, d_model, num_heads=8):
         super().__init__()
+
+        if d_model % num_heads != 0:
+            raise ValueError(
+                f"Cannot split d_model={d_model} over num_heads={num_heads}!"
+            )
+
+        self.window_len = window_len
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.head_dim = d_model // num_heads
+
+        self.params["w"] = {
+            "Q": Array.randn((num_heads, d_model, self.head_dim)),
+            "K": Array.randn((num_heads, d_model, self.head_dim)),
+            "V": Array.randn((num_heads, d_model, self.head_dim)),
+            "O": Array.randn((d_model, d_model)),
+        }
+        
+        self.softmax = Softmax()
     def forward(self, x):
-        pass
+        S, D = x.shape
+
+        # (S, H, Dh)
+        Q = x.dot(self.params["w"]["Q"], axes=([1], [1]))
+        K = x.dot(self.params["w"]["K"], axes=([1], [1]))
+        V = x.dot(self.params["w"]["V"], axes=([1], [1]))
+
+        heads = []
+
+        for h in range(self.num_heads):
+            q = Q[:, h, :]          # (S, Dh)
+            k = K[:, h, :]          # (S, Dh)
+            v = V[:, h, :]          # (S, Dh)
+
+            # (S, S)
+            scores = q @ k.transpose()
+            scores /= math.sqrt(self.head_dim)
+
+            weights = self.softmax.forward(scores)
+
+            # (S, Dh)
+            heads.append(weights @ v)
+
+        # (S, H, Dh)
+        out = Array.stack(heads, axis=1)
+
+        # (S, D)
+        out = out.reshape(S, D)
+
+        # (S, D)
+        out = out @ self.params['w']["O"]
+
+        return out
     def backward(self, grad):
         pass
 
 if __name__ == "__main__":
-    att = Attention(3, 4)
-    print(att.forward(Array.randn((3, 4))))
-    print(att.backward(Array.randn((3, 4))))
+    att = MHAttention(4, 16)
+    print(att.forward(Array.randn((4, 16))))
+    # print(att.backward(Array.randn((16, 4))))
