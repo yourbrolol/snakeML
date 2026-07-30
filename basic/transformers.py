@@ -130,46 +130,134 @@ class MHAttention(Layer):
             "V": Array.randn((num_heads, d_model, self.head_dim)),
             "O": Array.randn((d_model, d_model)),
         }
-        
-        self.softmax = Softmax()
-    def forward(self, x):
-        S, D = x.shape
 
-        # (S, H, Dh)
+        self.grads["w"] = {
+            "Q": Array.zeros((num_heads, d_model, self.head_dim)),
+            "K": Array.zeros((num_heads, d_model, self.head_dim)),
+            "V": Array.zeros((num_heads, d_model, self.head_dim)),
+            "O": Array.zeros((d_model, d_model)),
+        }
+
+        # One Softmax per head
+        self.softmax = [Softmax() for _ in range(num_heads)]
+    def forward(self, x):
+        self.input = x
+        self.S, self.D = x.shape
+
         Q = x.dot(self.params["w"]["Q"], axes=([1], [1]))
         K = x.dot(self.params["w"]["K"], axes=([1], [1]))
         V = x.dot(self.params["w"]["V"], axes=([1], [1]))
 
+        # Cache these for backward
+        self.Q = Q
+        self.K = K
+        self.V = V
+
+        self.cache = []
+
         heads = []
 
         for h in range(self.num_heads):
-            q = Q[:, h, :]          # (S, Dh)
-            k = K[:, h, :]          # (S, Dh)
-            v = V[:, h, :]          # (S, Dh)
+            q = Q[:, h, :]
+            k = K[:, h, :]
+            v = V[:, h, :]
 
-            # (S, S)
-            scores = q @ k.transpose()
-            scores /= math.sqrt(self.head_dim)
+            scores = (q @ k.T) / math.sqrt(self.head_dim)
+            weights = self.softmax[h].forward(scores)
 
-            weights = self.softmax.forward(scores)
+            head = weights @ v
+            heads.append(head)
 
-            # (S, Dh)
-            heads.append(weights @ v)
+            self.cache.append({
+                "q": q,
+                "k": k,
+                "v": v,
+                "weights": weights,
+            })
+
+        out = Array.stack(heads, axis=1)
+        out = out.reshape(self.S, self.D)
+
+        self.out = out
+
+        return out @ self.params["w"]["O"]
+    def backward(self, grad):
+        self.grads["w"]["O"] = self.out.T @ grad
+        dout = grad @ self.params["w"]["O"].T
 
         # (S, H, Dh)
-        out = Array.stack(heads, axis=1)
+        dheads = dout.reshape(self.S, self.num_heads, self.head_dim)
 
-        # (S, D)
-        out = out.reshape(S, D)
+        dQ = Array.zeros(self.Q.shape)
+        dK = Array.zeros(self.K.shape)
+        dV = Array.zeros(self.V.shape)
 
-        # (S, D)
-        out = out @ self.params['w']["O"]
+        # ----- Each head -----
 
-        return out
-    def backward(self, grad):
-        pass
+        for h in range(self.num_heads):
+            cache = self.cache[h]
+
+            q = cache["q"]
+            k = cache["k"]
+            v = cache["v"]
+            weights = cache["weights"]
+
+            dhead = dheads[:, h, :]
+
+            # head = weights @ v
+            dweights = dhead @ v.T
+            dv = weights.T @ dhead
+
+            # weights = softmax(scores)
+            dscores = self.softmax[h].backward(dweights)
+
+            # scores = (q @ k.T) / sqrt(Dh)
+            dscores /= math.sqrt(self.head_dim)
+
+            # q @ k.T
+            dq = dscores @ k
+            dk = dscores.T @ q
+
+            dQ[:, h, :] = dq
+            dK[:, h, :] = dk
+            dV[:, h, :] = dv
+
+        self.grads["w"]["Q"] = (
+            self.input
+            .dot(dQ, axes=([0], [0]))
+            .permute(1, 0, 2)
+        )
+
+        self.grads["w"]["K"] = (
+            self.input
+            .dot(dK, axes=([0], [0]))
+            .permute(1, 0, 2)
+        )
+
+        self.grads["w"]["V"] = (
+            self.input
+            .dot(dV, axes=([0], [0]))
+            .permute(1, 0, 2)
+        )
+
+        dxQ = dQ.dot(
+            self.params["w"]["Q"],
+            axes=([1, 2], [0, 2])
+        )
+
+        dxK = dK.dot(
+            self.params["w"]["K"],
+            axes=([1, 2], [0, 2])
+        )
+
+        dxV = dV.dot(
+            self.params["w"]["V"],
+            axes=([1, 2], [0, 2])
+        )
+
+        return dxQ + dxK + dxV
 
 if __name__ == "__main__":
     att = MHAttention(4, 16)
     print(att.forward(Array.randn((4, 16))))
-    # print(att.backward(Array.randn((16, 4))))
+    print(att.backward(Array.randn((4, 16))))
