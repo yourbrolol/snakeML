@@ -13,3 +13,4 @@ SnakeML mostly consists of a few simple types that branch into functional classe
 - `Array` (powers tensors and their operations).
 **This means that YOU can implement your own solutions if you haven't found one in the library. The base is here - the task is up to you.**
 **Contribute to SnakeML today on GitHub!**
+## WARNING: SnakeML is no longer under active development. It began as a learning project to better understand how modern machine learning frameworks work internally, and it has achieved that goal. Bug fixes and community contributions are still welcome, and pull requests will be reviewed when time permits.
