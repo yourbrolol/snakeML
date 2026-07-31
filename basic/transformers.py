@@ -1,7 +1,8 @@
-from .layers import Layer
+from .layers import Layer, Linear
+from .nn import Sequential
 from structs import Array
 from basic.optimizers import SGD
-from basic.activations import Softmax
+from basic.activations import GELU, Softmax
 import math
 
 class Embedding(Layer):
@@ -49,7 +50,7 @@ class LayerNorm(Layer):
         self.var = ((x - self.mean) ** 2).mean(axis=-1, keepdims=True)
         self.inv_std = 1 / (self.var + eps).sqrt()
         self.x_hat = (x - self.mean) * self.inv_std
-        return self.params['w'] * self.x_hat + self.params['b']
+        return self.x_hat * self.params['w'] + self.params['b']
     def backward(self, grad):
         # parameter gradients
         self.grads['w'] = (grad * self.x_hat).sum(axis=tuple(range(grad.ndim - 1)))
@@ -257,7 +258,32 @@ class MHAttention(Layer):
 
         return dxQ + dxK + dxV
 
+
+class TransformerBlock(Layer):
+    def __init__(self, window_len, d_model, num_heads=8):
+        super().__init__()
+        self.attention = MHAttention(window_len, d_model, num_heads)
+        self.norm1 = LayerNorm(d_model)
+        self.norm2 = LayerNorm(d_model)
+        self.ffn = Sequential([
+            Linear(d_model, d_model * 4),
+            GELU(),
+            Linear(d_model * 4, d_model),
+        ])
+    def forward(self, x):
+        attn_out = self.attention.forward(x)
+        x = self.norm1.forward(x + attn_out)
+        ffn_out = self.ffn.forward(x)
+        x = self.norm2.forward(x + ffn_out)
+        return x
+    def backward(self, grad):
+        grad = self.norm2.backward(grad)
+        grad_ffn = self.ffn.backward(grad)
+        grad += grad_ffn
+        grad = self.norm1.backward(grad)
+        grad_attn = self.attention.backward(grad)
+        return grad + grad_attn
+
 if __name__ == "__main__":
-    att = MHAttention(4, 16)
-    print(att.forward(Array.randn((4, 16))))
-    print(att.backward(Array.randn((4, 16))))
+    block = TransformerBlock(window_len=10, d_model=32, num_heads=4)
+    block.forward(Array.randn((10, 32)))
