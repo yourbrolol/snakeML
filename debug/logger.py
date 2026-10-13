@@ -29,7 +29,9 @@ class Logger:
         if hasattr(self, "_default_context"):
             context = {**self._default_context, **context}
         context.update(kwargs)
-        payload = format_message(message, level=level, module=self.name, context=context or None)
+        payload = format_message(
+            message, level=level, module=self.name, context=context or None
+        )
         print(payload, file=stream)
 
         # optionally persist logs to a file when enabled in config
@@ -42,7 +44,10 @@ class Logger:
                 except Exception:
                     # avoid raising from logging; fallback to stderr
                     try:
-                        print(f"[snakeML][ERROR] failed to write log to {log_path}", file=sys.stderr)
+                        print(
+                            f"[snakeML][ERROR] failed to write log to {log_path}",
+                            file=sys.stderr,
+                        )
                     except Exception:
                         pass
         except Exception:
@@ -76,7 +81,11 @@ class Logger:
 def get_logger(name=None):
     if name is None:
         frame = inspect.currentframe().f_back
-        name = frame.f_globals.get("__name__", "snakeML") if frame is not None else "snakeML"
+        name = (
+            frame.f_globals.get("__name__", "snakeML")
+            if frame is not None
+            else "snakeML"
+        )
     return Logger(name=name)
 
 

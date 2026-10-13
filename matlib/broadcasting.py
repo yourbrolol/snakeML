@@ -1,7 +1,8 @@
 def broadcast(a, b):
     """Normalize input array structures for compatible broadcasting and matrix operations."""
+
     def _is_1d(obj):
-        if hasattr(obj, 'ndim'):
+        if hasattr(obj, "ndim"):
             try:
                 return obj.ndim == 1
             except Exception:
@@ -17,8 +18,8 @@ def broadcast(a, b):
     a_is_1d = _is_1d(a)
     b_is_1d = _is_1d(b)
 
-    a_data = a.data if hasattr(a, 'data') else a
-    b_data = b.data if hasattr(b, 'data') else b
+    a_data = a.data if hasattr(a, "data") else a
+    b_data = b.data if hasattr(b, "data") else b
 
     # Normalize to nested-list shapes: (N,) -> (1, N) and (N,) -> (N, 1)
     if a_is_1d:
@@ -34,15 +35,16 @@ def broadcast(a, b):
             b_data = [[b_data]]
 
     if a_is_1d and b_is_1d:
-        squeeze_type = 'scalar'
+        squeeze_type = "scalar"
     elif b_is_1d:
-        squeeze_type = 'column'
+        squeeze_type = "column"
     elif a_is_1d:
-        squeeze_type = 'row'
+        squeeze_type = "row"
     else:
-        squeeze_type = 'none'
+        squeeze_type = "none"
 
     return a_data, b_data, squeeze_type
+
 
 def elementwise(a, b, op):
     """Applies a math operator element-wise between self and another Array/scalar."""

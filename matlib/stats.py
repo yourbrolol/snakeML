@@ -2,7 +2,7 @@ import math
 
 from debug import get_logger
 from debug.errors import ValidationError
-from structs.utils import zeroes, indices, set_nested
+from structs.utils import indices, set_nested, zeroes
 
 logger = get_logger(__name__)
 
@@ -18,6 +18,7 @@ def _sum_values(flat):
 # ---------------------------------------------------------------------------
 # Global reductions (flatten first – backwards-compatible)
 # ---------------------------------------------------------------------------
+
 
 def sum(flat):
     """Returns the sum of all elements in a flat list."""
@@ -129,6 +130,7 @@ def norm(flat):
 # Axis-aware reductions
 # ---------------------------------------------------------------------------
 
+
 def _reduce_axis(array, axis, reduce_fn, keepdims=False):
     """Apply reduce_fn along a single axis of an Array-like object.
 
@@ -178,7 +180,7 @@ def _reduce_axis(array, axis, reduce_fn, keepdims=False):
         else:
             # Insert a slice over the contracted axis to collect values
             in_base = list(out_idx)
-            in_base.insert(axis, 0)   # placeholder
+            in_base.insert(axis, 0)  # placeholder
             values = []
             for k in range(shape[axis]):
                 in_base[axis] = k
@@ -197,12 +199,7 @@ def sum_axis(array, axis=None, keepdims=False):
         # reduce every axis from last to first
         result = array
         for ax in reversed(range(array.ndim)):
-            result = _reduce_axis(
-                result,
-                ax,
-                _sum_values,
-                keepdims=keepdims
-            )
+            result = _reduce_axis(result, ax, _sum_values, keepdims=keepdims)
         return result
 
     # Multiple axes
@@ -211,12 +208,7 @@ def sum_axis(array, axis=None, keepdims=False):
 
         # Reduce highest axes first so indices don't shift
         for ax in sorted(axis, reverse=True):
-            result = _reduce_axis(
-                result,
-                ax,
-                _sum_values,
-                keepdims=keepdims
-            )
+            result = _reduce_axis(result, ax, _sum_values, keepdims=keepdims)
 
         return result
 

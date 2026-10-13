@@ -10,7 +10,9 @@ def ensure_type(value, expected_type, *, name="value", allow_none=False):
             return value
     elif isinstance(value, expected_type):
         return value
-    raise TypeMismatchError(f"{name} must be of type {expected_type.__name__}, got {type(value).__name__}.")
+    raise TypeMismatchError(
+        f"{name} must be of type {expected_type.__name__}, got {type(value).__name__}."
+    )
 
 
 def ensure_shape(shape, expected_shape, *, name="shape"):

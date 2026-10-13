@@ -1,11 +1,13 @@
-from matlib import exp
+from math import pi, sqrt
+
 from basic.layers import Layer
 from debug import get_logger
-from structs import Array
-from math import pi, sqrt
 from debug.errors import ShapeError
+from matlib import exp
+from structs import Array
 
 logger = get_logger(__name__)
+
 
 class Activation(Layer):
     def __init__(self, name):
@@ -14,47 +16,60 @@ class Activation(Layer):
         self.name = name
         self.input = None
         self.output = None
-    def forward(self, x): raise NotImplementedError
-    def backward(self, x): raise NotImplementedError
+
+    def forward(self, x):
+        raise NotImplementedError
+
+    def backward(self, x):
+        raise NotImplementedError
+
 
 class LinearActivation(Activation):
     def __init__(self):
         """Identity activation layer."""
         super().__init__("LinearActivation")
+
     def forward(self, x):
         """Pass input through without transformation."""
         logger.debug("linear activation forward", activation=self.name, value=x)
         return x
+
     def backward(self, x):
         """Pass gradient through without transformation."""
         logger.debug("linear activation backward", activation=self.name, value=x)
         return x
 
+
 class ReLU(Activation):
     def __init__(self):
         """Rectified Linear Unit activation layer."""
         super().__init__("ReLU")
+
     def forward(self, x):
         """Apply ReLU activation element-wise."""
         self.input = x
         logger.debug("relu forward", value=x)
         out = max(0, x)
         return out if isinstance(out, Array) else Array([out])
+
     def backward(self, grad):
         """Compute backward pass for ReLU activation."""
         logger.debug("relu backward", grad=grad, input=self.input)
         return grad * (self.input > 0)
 
+
 class GELU(Activation):
     def __init__(self):
         """Gaussian Error Linear Unit activation layer."""
         super().__init__("GELU")
+
     def forward(self, x):
         """Apply GELU activation element-wise."""
         self.input = x
         logger.debug("gelu forward", value=x)
-        out = 0.5 * x * (1 + (sqrt(2/pi) * (x + 0.044715 * x**3)).tanh())
+        out = 0.5 * x * (1 + (sqrt(2 / pi) * (x + 0.044715 * x**3)).tanh())
         return out if isinstance(out, Array) else Array([out])
+
     def backward(self, grad):
         """Compute backward pass for GELU activation."""
         logger.debug("gelu backward", grad=grad, input=self.input)
@@ -62,21 +77,22 @@ class GELU(Activation):
         x = self.input
         k = (2 / pi) ** 0.5
 
-        u = k * (x + 0.044715 * x ** 3)
+        u = k * (x + 0.044715 * x**3)
         tanh_term = u.tanh()
-        sech2_term = 1 - tanh_term ** 2
+        sech2_term = 1 - tanh_term**2
 
-        gelu_grad = (
-            0.5 * (1 + tanh_term)
-            + 0.5 * x * sech2_term * k * (1 + 0.134145 * x ** 2)
+        gelu_grad = 0.5 * (1 + tanh_term) + 0.5 * x * sech2_term * k * (
+            1 + 0.134145 * x**2
         )
 
         return grad * gelu_grad
+
 
 class Sigmoid(Activation):
     def __init__(self):
         """Sigmoid activation layer."""
         super().__init__("Sigmoid")
+
     def forward(self, x):
         """Apply Sigmoid activation element-wise."""
         self.input = x
@@ -84,28 +100,33 @@ class Sigmoid(Activation):
         out = 1 / (1 + -x.exp())
         self.output = out
         return out if isinstance(out, Array) else Array([out])
+
     def backward(self, grad):
         """Compute backward pass for Sigmoid activation."""
         logger.debug("sigmoid backward", grad=grad, input=self.input)
         out = self.output
-        return grad * (out*(1-out))
+        return grad * (out * (1 - out))
+
 
 class Tanh(Activation):
     def __init__(self):
         """Tanh activation layer."""
         super().__init__("Tanh")
+
     def forward(self, x):
         """Apply Tanh activation element-wise."""
         self.input = x
         logger.debug("tanh forward", value=x)
         e_px, e_nx = x.exp(), (-x).exp()
-        out = (e_px-e_nx) / (e_px+e_nx)
+        out = (e_px - e_nx) / (e_px + e_nx)
         self.output = out
         return out if isinstance(out, Array) else Array([out])
+
     def backward(self, grad):
         """Compute backward pass for Tanh activation."""
         logger.debug("tanh backward", grad=grad, input=self.input)
-        return grad * (1-(self.output**2))
+        return grad * (1 - (self.output**2))
+
 
 class Softmax(Activation):
     """Numerically stable softmax activation.
@@ -126,7 +147,7 @@ class Softmax(Activation):
     @staticmethod
     def _softmax_1d(row):
         """Numerically stable softmax on a 1-D Array."""
-        m = row.max()           # subtract max to prevent exp overflow
+        m = row.max()  # subtract max to prevent exp overflow
         e = (row - m).exp()
         return e / e.sum()
 
@@ -201,7 +222,10 @@ class Softmax(Activation):
             return self._grad_1d(p, grad)
 
         return Array.stack(
-            [self._grad_1d(pi, gi)
-             for pi, gi in zip(p.unbind(axis=0), grad.unbind(axis=0))],
+            [
+                self._grad_1d(pi, gi)
+                for pi, gi in zip(p.unbind(axis=0), grad.unbind(axis=0))
+            ],
             axis=0,
         )
+

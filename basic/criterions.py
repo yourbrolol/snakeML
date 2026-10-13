@@ -1,15 +1,28 @@
-from structs import Array
-from debug import get_logger, operation_context, collect_diagnostics, summarize_diagnostics, describe, current_context
-from debug.validator import ensure_type
+from debug import (
+    collect_diagnostics,
+    current_context,
+    describe,
+    get_logger,
+    operation_context,
+    summarize_diagnostics,
+)
 from debug.errors import OperationError
+from debug.validator import ensure_type
+from structs import Array
 
 logger = get_logger(__name__)
+
 
 class Loss:
     def __init__(self, name):
         self.name = name
-    def forward(self, y_pred, y_true): raise NotImplementedError
-    def backward(self, y_pred, y_true): raise NotImplementedError
+
+    def forward(self, y_pred, y_true):
+        raise NotImplementedError
+
+    def backward(self, y_pred, y_true):
+        raise NotImplementedError
+
 
 class MSE(Loss):
     def __init__(self):
@@ -31,7 +44,11 @@ class MSE(Loss):
                 # attach current debug context to the raised OperationError
                 ctx = current_context()
                 logger.error("validation failed: %s", e)
-                raise OperationError("MSE.forward validation failed", context=ctx, details={"error": str(e)})
+                raise OperationError(
+                    "MSE.forward validation failed",
+                    context=ctx,
+                    details={"error": str(e)},
+                )
 
             try:
                 out = 0.5 * (y_pred - y_true) ** 2
@@ -57,6 +74,7 @@ class MSE(Loss):
             grad = y_pred - y_true
             logger.debug("backward grad: %s", describe(grad))
             return grad
+
 
 class CrossEntropy(Loss):
     """Cross-entropy loss for pre-softmaxed (probability) predictions.
@@ -124,7 +142,7 @@ class CrossEntropy(Loss):
                 # clip probabilities away from 0 to guard against log(0)
                 eps = 1e-12
                 log_probs = (y_pred + eps).log()
-                nll = y_true * log_probs          # element-wise
+                nll = y_true * log_probs  # element-wise
                 loss = -nll.sum() / len(list(y_pred.flatten()))
             except Exception as e:
                 logger.error("forward computation error: %s", e)
@@ -165,3 +183,4 @@ class CrossEntropy(Loss):
             grad = (y_pred - y_true) / n
             logger.debug("backward grad: %s", describe(grad))
             return grad
+

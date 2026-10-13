@@ -13,7 +13,9 @@ class Array(ArrayMixins):
         if raw:
             self.data = values
             self.shape = tuple(shape) if shape is not None else self._get_shape(values)
-            self.strides = tuple(strides) if strides is not None else self._strides(self.shape)
+            self.strides = (
+                tuple(strides) if strides is not None else self._strides(self.shape)
+            )
         else:
             self.data = self._to_list(values)
             self.shape = self._get_shape(self.data)

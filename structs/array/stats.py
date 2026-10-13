@@ -5,7 +5,8 @@ from __future__ import annotations
 import math as _math
 
 from debug import get_logger
-from matlib import ops as matlib_ops, stats as matlib_stats
+from matlib import ops as matlib_ops
+from matlib import stats as matlib_stats
 
 logger = get_logger(__name__)
 
@@ -33,7 +34,9 @@ class ArrayStatsOps:
         """Population variance of all elements, or along a given axis."""
         if axis is None:
             return matlib_stats.variance(list(self.flatten()))
-        return self._wrap_result(matlib_stats.variance_axis(self, axis, keepdims=keepdims))
+        return self._wrap_result(
+            matlib_stats.variance_axis(self, axis, keepdims=keepdims)
+        )
 
     def std(self, axis=None, keepdims=False):
         """Standard deviation of all elements, or along a given axis."""
@@ -68,19 +71,25 @@ class ArrayStatsOps:
         """Index of the maximum value."""
         if axis is None:
             return matlib_stats.argmax(list(self.flatten()))
-        return self._wrap_result(matlib_stats.argmax_axis(self, axis, keepdims=keepdims))
+        return self._wrap_result(
+            matlib_stats.argmax_axis(self, axis, keepdims=keepdims)
+        )
 
     def argmin(self, axis=None, keepdims=False):
         """Index of the minimum value."""
         if axis is None:
             return matlib_stats.argmin(list(self.flatten()))
-        return self._wrap_result(matlib_stats.argmin_axis(self, axis, keepdims=keepdims))
+        return self._wrap_result(
+            matlib_stats.argmin_axis(self, axis, keepdims=keepdims)
+        )
 
     def count_nonzero(self, axis=None, keepdims=False):
         """Count of non-zero values."""
         if axis is None:
             return matlib_stats.count_nonzero(list(self.flatten()))
-        return self._wrap_result(matlib_stats.count_nonzero_axis(self, axis, keepdims=keepdims))
+        return self._wrap_result(
+            matlib_stats.count_nonzero_axis(self, axis, keepdims=keepdims)
+        )
 
     def norm(self, axis=None, keepdims=False):
         """L2 norm of the array."""

@@ -22,4 +22,6 @@ def collect_diagnostics(obj=None, *, include_data=False):
 
 def summarize_diagnostics(obj=None, *, include_data=False):
     """Serialize diagnostics to a compact JSON string."""
-    return json.dumps(collect_diagnostics(obj, include_data=include_data), sort_keys=True)
+    return json.dumps(
+        collect_diagnostics(obj, include_data=include_data), sort_keys=True
+    )

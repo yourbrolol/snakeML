@@ -6,7 +6,8 @@ import math
 
 from debug import get_logger
 from debug.errors import ShapeError
-from matlib import broadcasting, linalg, ops as matlib_ops
+from matlib import broadcasting, linalg
+from matlib import ops as matlib_ops
 
 logger = get_logger(__name__)
 
@@ -107,7 +108,7 @@ class ArrayMathOps:
         return self._update_self(self._elementwise(other, lambda x, y: x / y))
 
     def __ipow__(self, other):
-        return self._update_self(self._elementwise(other, lambda x, y: x ** y))
+        return self._update_self(self._elementwise(other, lambda x, y: x**y))
 
     def __imatmul__(self, other):
         return self._update_self(self.matmul(other))
@@ -137,7 +138,7 @@ class ArrayMathOps:
         return self.matmul(other)
 
     def __pow__(self, other):
-        return self._elementwise(other, lambda x, y: x ** y)
+        return self._elementwise(other, lambda x, y: x**y)
 
     def exp(self):
         return self._wrap_result(matlib_ops.exp(self))
@@ -200,7 +201,9 @@ class ArrayMathOps:
         return self._wrap_result(matlib_ops.round(self, ndigits))
 
     def clip(self, min_value=None, max_value=None):
-        return self._wrap_result(matlib_ops.clip(self, min_value=min_value, max_value=max_value))
+        return self._wrap_result(
+            matlib_ops.clip(self, min_value=min_value, max_value=max_value)
+        )
 
     def sign(self):
         return self._wrap_result(matlib_ops.sign(self))
@@ -212,7 +215,12 @@ class ArrayMathOps:
 
     def diag(self):
         if self.ndim == 1:
-            return self.__class__([[value if i == j else 0 for j in range(len(self))] for i, value in enumerate(self)])
+            return self.__class__(
+                [
+                    [value if i == j else 0 for j in range(len(self))]
+                    for i, value in enumerate(self)
+                ]
+            )
         if self.ndim == 2:
             return self.__class__([self[i][i] for i in range(min(self.shape))])
         raise ShapeError("diag only supports 1D or 2D arrays")

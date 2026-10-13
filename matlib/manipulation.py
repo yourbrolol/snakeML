@@ -2,17 +2,17 @@ import builtins as _builtins
 
 from debug import get_logger
 from debug.errors import ShapeError, ValidationError
-from structs.utils import zeroes, indices, set_nested
+from structs.utils import indices, set_nested, zeroes
 
 logger = get_logger(__name__)
 
 builtins_sum = _builtins.sum
 
 
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _get_data(a):
     """Return the raw nested-list data from an Array or a plain list."""
@@ -37,6 +37,7 @@ def _get_shape(a):
 # ---------------------------------------------------------------------------
 # Concatenate
 # ---------------------------------------------------------------------------
+
 
 def concatenate(arrays, axis=0):
     """Join a sequence of arrays along an existing axis.
@@ -73,10 +74,14 @@ def concatenate(arrays, axis=0):
     for s in shapes[1:]:
         if len(s) != ndim:
             logger.error("concatenate ndim mismatch", shapes=shapes)
-            raise ShapeError(f"All arrays must have the same number of dimensions, got {s} vs {ref}")
+            raise ShapeError(
+                f"All arrays must have the same number of dimensions, got {s} vs {ref}"
+            )
         for i, (a, b) in enumerate(zip(ref, s)):
             if i != axis_norm and a != b:
-                logger.error("concatenate shape mismatch", shapes=shapes, axis=axis_norm)
+                logger.error(
+                    "concatenate shape mismatch", shapes=shapes, axis=axis_norm
+                )
                 raise ShapeError(
                     f"All dimensions except axis {axis_norm} must match; "
                     f"got {s} vs {ref}"
@@ -85,8 +90,7 @@ def concatenate(arrays, axis=0):
     # Build output shape
     total_axis_size = builtins_sum(s[axis_norm] for s in shapes)
     out_shape = tuple(
-        total_axis_size if i == axis_norm else ref[i]
-        for i in range(ndim)
+        total_axis_size if i == axis_norm else ref[i] for i in range(ndim)
     )
 
     result = zeroes(out_shape)
@@ -107,6 +111,7 @@ def concatenate(arrays, axis=0):
         out_shape=out_shape,
     )
     return result
+
 
 def flip(array, axis):
     """Flip the array along the specified axis.
@@ -149,9 +154,11 @@ def flip(array, axis):
     )
     return result
 
+
 # ---------------------------------------------------------------------------
 # Stack
 # ---------------------------------------------------------------------------
+
 
 def stack(arrays, axis=0):
     """Join a sequence of arrays along a *new* axis.
@@ -212,6 +219,7 @@ def stack(arrays, axis=0):
 # Split
 # ---------------------------------------------------------------------------
 
+
 def split(array, indices_or_sections, axis=0):
     """Split an array into multiple sub-arrays along an axis.
 
@@ -250,7 +258,9 @@ def split(array, indices_or_sections, axis=0):
             logger.error("split sections must be positive", sections=n)
             raise ValidationError(f"sections must be a positive integer, got {n}")
         if axis_size % n != 0:
-            logger.error("split does not divide evenly", axis_size=axis_size, sections=n)
+            logger.error(
+                "split does not divide evenly", axis_size=axis_size, sections=n
+            )
             raise ShapeError(
                 f"Axis {axis_norm} has size {axis_size} which is not divisible by {n}"
             )
@@ -286,6 +296,7 @@ def split(array, indices_or_sections, axis=0):
 # ---------------------------------------------------------------------------
 # Unbind
 # ---------------------------------------------------------------------------
+
 
 def unbind(array, axis=0):
     """Remove a dimension by returning all slices along it.

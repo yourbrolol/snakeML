@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import math
 import random
 from bisect import bisect_left, bisect_right
 
@@ -25,7 +24,9 @@ class ArrayUtilsOps:
             return [self._to_list(v) for v in values]
         if isinstance(values, range):
             return list(values)
-        if hasattr(values, "__iter__") and not isinstance(values, (str, bytes, bytearray)):
+        if hasattr(values, "__iter__") and not isinstance(
+            values, (str, bytes, bytearray)
+        ):
             return [self._to_list(v) for v in values]
         return values
 
@@ -40,7 +41,7 @@ class ArrayUtilsOps:
     def _strides(self, shape):
         strides = [1] * len(shape)
         acc = 1
-        for i in range(len(shape)-1, -1, -1):
+        for i in range(len(shape) - 1, -1, -1):
             strides[i] = acc
             acc *= shape[i]
         return tuple(strides)
@@ -65,7 +66,7 @@ class ArrayUtilsOps:
         if isinstance(result, list):
             return self.__class__(result)
         return result
-    
+
     def _wrap(self, value):
         """Wraps a value in an Array if it's not already one."""
         if isinstance(value, self.__class__):
@@ -86,7 +87,11 @@ class ArrayUtilsOps:
     def flatten(self):
         """Returns a flat 1D Array version of the current array."""
         flat_array = self.__class__(list(self._flatten(self.data)))
-        logger.debug("flattened array", original_shape=self.shape, flattened_shape=flat_array.shape)
+        logger.debug(
+            "flattened array",
+            original_shape=self.shape,
+            flattened_shape=flat_array.shape,
+        )
         return flat_array
 
     def item(self, idx=None):
@@ -94,13 +99,16 @@ class ArrayUtilsOps:
         flat = self.flatten()
         if idx is None:
             if flat.size != 1:
-                raise ValueError("item() requires an index for arrays with more than one element")
+                raise ValueError(
+                    "item() requires an index for arrays with more than one element"
+                )
             idx = 0
         return flat[idx]
 
     @property
     def dtype(self):
         """Infer a simple dtype label for the array contents."""
+
         def infer(data):
             if isinstance(data, list):
                 if not data:
@@ -173,11 +181,17 @@ class ArrayUtilsOps:
     def hstack(self, other):
         """Stack arrays horizontally (concatenate along axis 1)."""
         other_data = other.data if hasattr(other, "data") else other
-        if isinstance(other_data, list) and len(other_data) == 1 and isinstance(other_data[0], list):
+        if (
+            isinstance(other_data, list)
+            and len(other_data) == 1
+            and isinstance(other_data[0], list)
+        ):
             if self.ndim == 2 and len(self.data) != 1:
                 row = other_data[0]
                 other_data = [row[:] for _ in range(len(self.data))]
-        return self.__class__(manipulation.concatenate([self, self.__class__(other_data)], axis=1))
+        return self.__class__(
+            manipulation.concatenate([self, self.__class__(other_data)], axis=1)
+        )
 
     def array_split(self, indices_or_sections, axis=0):
         """Split an array into multiple parts, allowing uneven sizes."""
@@ -190,10 +204,15 @@ class ArrayUtilsOps:
             parts = []
             for i in range(indices_or_sections):
                 length = base + (1 if i < extra else 0)
-                parts.append(self._slice_along_axis(self.data, axis, start, start + length))
+                parts.append(
+                    self._slice_along_axis(self.data, axis, start, start + length)
+                )
                 start += length
             return [self.__class__(part) for part in parts]
-        return [self.__class__(self._slice_along_axis(self.data, axis, start, stop)) for start, stop in self._split_points(indices_or_sections, axis)]
+        return [
+            self.__class__(self._slice_along_axis(self.data, axis, start, stop))
+            for start, stop in self._split_points(indices_or_sections, axis)
+        ]
 
     def chunk(self, chunks, axis=0):
         """Split the array into chunks of approximately the requested size."""
@@ -203,6 +222,7 @@ class ArrayUtilsOps:
 
     def astype(self, dtype):
         """Cast the array contents to the requested dtype."""
+
         def _cast(value):
             if isinstance(value, list):
                 return [_cast(item) for item in value]
@@ -231,7 +251,10 @@ class ArrayUtilsOps:
 
         def _where(data, cond, x_val, y_val):
             if isinstance(data, list):
-                return [_where(item, cond_item, x_val, y_val) for item, cond_item in zip(data, cond)]
+                return [
+                    _where(item, cond_item, x_val, y_val)
+                    for item, cond_item in zip(data, cond)
+                ]
             return x_val if cond else y_val
 
         return self.__class__(_where(self.data, cond_data, x_data, y_data))
@@ -265,7 +288,10 @@ class ArrayUtilsOps:
 
         def _masked(data, mask_item):
             if isinstance(data, list):
-                return [_masked(item, mask_child) for item, mask_child in zip(data, mask_item)]
+                return [
+                    _masked(item, mask_child)
+                    for item, mask_child in zip(data, mask_item)
+                ]
             return value if mask_item else data
 
         return self.__class__(_masked(self.data, mask_data))
@@ -332,7 +358,9 @@ class ArrayUtilsOps:
         if axis == 0:
             return data[start:stop]
         if isinstance(data, list):
-            return [self._slice_along_axis(item, axis - 1, start, stop) for item in data]
+            return [
+                self._slice_along_axis(item, axis - 1, start, stop) for item in data
+            ]
         return data
 
     def _split_points(self, indices_or_sections, axis):
@@ -363,7 +391,10 @@ class ArrayUtilsOps:
         if len(shape) == 1:
             return flat[:size]
         chunk = len(flat) // size
-        return [self._restore_from_flat(flat[i * chunk:(i + 1) * chunk], shape[1:]) for i in range(size)]
+        return [
+            self._restore_from_flat(flat[i * chunk : (i + 1) * chunk], shape[1:])
+            for i in range(size)
+        ]
 
 
 __all__ = ["ArrayUtilsOps"]

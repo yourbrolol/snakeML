@@ -13,13 +13,19 @@ def format_message(message, *, level="info", module=None, context=None):
     parts = [f"[{prefix}][{level_name}]"]
 
     if module is None:
-        module = inspect.currentframe().f_back.f_globals.get("__name__", "unknown") if inspect.currentframe() and inspect.currentframe().f_back else "unknown"
+        module = (
+            inspect.currentframe().f_back.f_globals.get("__name__", "unknown")
+            if inspect.currentframe() and inspect.currentframe().f_back
+            else "unknown"
+        )
     if config.get("include_module", True):
         parts.append(f"[{module}]")
 
     active_context = dict(context or current_context())
     if config.get("include_context", True) and active_context:
-        compact_context = ", ".join(f"{key}={value}" for key, value in sorted(active_context.items()))
+        compact_context = ", ".join(
+            f"{key}={value}" for key, value in sorted(active_context.items())
+        )
         parts.append(f"{{{compact_context}}}")
 
     parts.append(str(message))

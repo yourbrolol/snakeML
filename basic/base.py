@@ -1,14 +1,20 @@
 from structs import Vector
 
-class Neuron():
+
+class Neuron:
     def __init__(self, input_dim):
         self.w = Vector()
         self.bias = Vector()
         self.input = None
         self.d_w = None
         self.d_b = None
-    def forward(self, input_data): raise NotImplementedError
-    def backward(self, output_grad): raise NotImplementedError
+
+    def forward(self, input_data):
+        raise NotImplementedError
+
+    def backward(self, output_grad):
+        raise NotImplementedError
+
 
 class LinearNeuron(Neuron):
     def __init__(self, input_dim):
@@ -17,13 +23,16 @@ class LinearNeuron(Neuron):
         self.input = None
         self.d_w = None
         self.d_b = None
+
     def forward(self, input_data):
         self.input = input_data
         return input_data * self.w + self.b
+
     def backward(self, output_grad):
         self.d_w = output_grad / self.input
         self.d_b = output_grad
         return output_grad * self.w
+
 
 class NeuronBasedLinear:
     def __init__(self, input_dim, output_dim):
@@ -34,8 +43,8 @@ class NeuronBasedLinear:
 
     def backward(self, output_gradient):
         input_gradient = Vector([0] * len(self.neurons[0].w))
-        
+
         for i, neuron in enumerate(self.neurons):
             input_gradient += neuron.backward(output_gradient[i])
-            
+
         return input_gradient

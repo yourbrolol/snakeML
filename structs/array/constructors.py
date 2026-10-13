@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from random import randint, random
+
 from debug import get_logger
 from debug.errors import ValidationError
-from random import random, randint
 
 logger = get_logger(__name__)
 
@@ -27,14 +28,14 @@ class ArrayConstructors:
             return [build(dim + 1) for _ in range(shape[dim])]
 
         return cls(build(0))
-    
+
     @classmethod
     def eye(cls, size, k=0):
         """Creates an identity matrix of the given size."""
         if not isinstance(size, int) or size <= 0:
             logger.error("invalid size for eye", size=size)
             raise ValidationError("Size must be a positive integer.")
-        
+
         result = [[1 if i == j else 0 for j in range(size)] for i in range(size)]
 
         return cls(result)

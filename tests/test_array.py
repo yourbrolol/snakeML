@@ -1,10 +1,10 @@
 import math
 import unittest
 
-from structs.array.array import Array
 from basic.transformers import Embedding
-
 from debug.errors import ShapeError, ValidationError
+from structs.array.array import Array
+
 
 class ArrayTests(unittest.TestCase):
     def test_scalar_indexing_returns_scalar(self):
@@ -25,7 +25,9 @@ class ArrayTests(unittest.TestCase):
 
     def test_generator_inputs_are_materialized(self):
         arr = Array([[0, 1], [1, 0]] for _ in range(3))
-        self.assertEqual(arr.data, [[[0, 1], [1, 0]], [[0, 1], [1, 0]], [[0, 1], [1, 0]]])
+        self.assertEqual(
+            arr.data, [[[0, 1], [1, 0]], [[0, 1], [1, 0]], [[0, 1], [1, 0]]]
+        )
         self.assertEqual(arr.shape, (3, 2, 2))
 
     def test_linear_algebra_helpers(self):
@@ -44,19 +46,25 @@ class ArrayTests(unittest.TestCase):
 
     def test_embedding_backward_accumulates_selected_rows(self):
         layer = Embedding(5, 3)
-        layer.params['w'].data = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0], [10.0, 11.0, 12.0], [13.0, 14.0, 15.0]]
+        layer.params["w"].data = [
+            [1.0, 2.0, 3.0],
+            [4.0, 5.0, 6.0],
+            [7.0, 8.0, 9.0],
+            [10.0, 11.0, 12.0],
+            [13.0, 14.0, 15.0],
+        ]
 
         grad = Array([[0.5, -0.25, 0.75], [1.0, 0.0, -0.5]])
         layer.backward(grad)
 
-        self.assertEqual(layer.grads['w'][1].data, [1.0, 0.0, -0.5])
-        self.assertEqual(layer.grads['w'][0].data, [0.5, -0.25, 0.75])
+        self.assertEqual(layer.grads["w"][1].data, [1.0, 0.0, -0.5])
+        self.assertEqual(layer.grads["w"][0].data, [0.5, -0.25, 0.75])
 
         second_grad = Array([[-0.1, 0.2, 0.3]])
         layer.backward(second_grad)
 
-        self.assertEqual(layer.grads['w'][1].data, [0.9, 0.2, -0.2])
-        self.assertEqual(layer.grads['w'][0].data, [0.5, -0.25, 0.75])
+        self.assertEqual(layer.grads["w"][1].data, [0.9, 0.2, -0.2])
+        self.assertEqual(layer.grads["w"][0].data, [0.5, -0.25, 0.75])
 
     def test_extended_array_helpers(self):
         arr = Array([[1, 2], [3, 4]])
@@ -80,7 +88,7 @@ class ArrayTests(unittest.TestCase):
         self.assertEqual(arr.count_nonzero(), 4)
         self.assertEqual(arr.clip(0, 2).data, [[1, 2], [2, 2]])
         self.assertEqual(arr.sign().data, [[1, 1], [1, 1]])
-    
+
     def test_array_battle(self):
         # ===== Constructors =====
         self.assertEqual(Array([]).shape, (0,))
@@ -88,30 +96,19 @@ class ArrayTests(unittest.TestCase):
         self.assertEqual(Array(range(5)).data, [0, 1, 2, 3, 4])
 
         # ===== Basic indexing =====
-        a = Array([[1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9]])
+        a = Array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
         self.assertEqual(a[0, 0], 1)
         self.assertEqual(a[-1, -1], 9)
         self.assertEqual(a[1].data, [4, 5, 6])
         self.assertEqual(a[:, 1].data, [2, 5, 8])
         self.assertEqual(a[1:, :2].data, [[4, 5], [7, 8]])
-        self.assertEqual(a[::-1].data,
-                        [[7, 8, 9],
-                        [4, 5, 6],
-                        [1, 2, 3]])
+        self.assertEqual(a[::-1].data, [[7, 8, 9], [4, 5, 6], [1, 2, 3]])
 
         # ===== Boolean / fancy indexing =====
-        self.assertEqual(
-            a[[True, False, True]].data,
-            [[1, 2, 3], [7, 8, 9]]
-        )
+        self.assertEqual(a[[True, False, True]].data, [[1, 2, 3], [7, 8, 9]])
 
-        self.assertEqual(
-            a[[2, 0]].data,
-            [[7, 8, 9], [1, 2, 3]]
-        )
+        self.assertEqual(a[[2, 0]].data, [[7, 8, 9], [1, 2, 3]])
 
         # ===== Assignment =====
         b = Array([[1, 2], [3, 4]])
@@ -129,74 +126,38 @@ class ArrayTests(unittest.TestCase):
         self.assertEqual(c.count_nonzero(), 4)
 
         # ===== Clip / sign =====
-        self.assertEqual(
-            c.clip(-1, 1).data,
-            [-1, -1, 0, 1, 1]
-        )
+        self.assertEqual(c.clip(-1, 1).data, [-1, -1, 0, 1, 1])
 
-        self.assertEqual(
-            c.sign().data,
-            [-1, -1, 0, 1, 1]
-        )
+        self.assertEqual(c.sign().data, [-1, -1, 0, 1, 1])
 
         # ===== Transpose =====
-        self.assertEqual(
-            a.T.data,
-            [[1, 4, 7],
-            [2, 5, 8],
-            [3, 6, 9]]
-        )
+        self.assertEqual(a.T.data, [[1, 4, 7], [2, 5, 8], [3, 6, 9]])
 
         # ===== Matrix multiplication =====
-        left = Array([[1, 2],
-                    [3, 4]])
+        left = Array([[1, 2], [3, 4]])
 
-        right = Array([[5, 6],
-                    [7, 8]])
+        right = Array([[5, 6], [7, 8]])
 
-        self.assertEqual(
-            left.matmul(right).data,
-            [[19, 22],
-            [43, 50]]
-        )
+        self.assertEqual(left.matmul(right).data, [[19, 22], [43, 50]])
 
         # ===== Matrix-vector =====
-        self.assertEqual(
-            left.matvec(Array([1, 2])).data,
-            [5, 11]
-        )
+        self.assertEqual(left.matvec(Array([1, 2])).data, [5, 11])
 
         # ===== Dot =====
-        self.assertEqual(
-            Array([1, 2, 3]).dot(Array([4, 5, 6])),
-            32
-        )
+        self.assertEqual(Array([1, 2, 3]).dot(Array([4, 5, 6])), 32)
 
         # ===== Outer =====
-        self.assertEqual(
-            Array([1, 2]).outer(Array([3, 4])).data,
-            [[3, 4],
-            [6, 8]]
-        )
+        self.assertEqual(Array([1, 2]).outer(Array([3, 4])).data, [[3, 4], [6, 8]])
 
         # ===== Broadcasting =====
-        self.assertEqual(
-            Array([1, 2]).broadcast_to((3, 2)).shape,
-            (3, 2)
-        )
+        self.assertEqual(Array([1, 2]).broadcast_to((3, 2)).shape, (3, 2))
 
         # ===== Stack =====
         self.assertEqual(
-            Array([[1], [2]]).hstack(Array([[3], [4]])).data,
-            [[1, 3],
-            [2, 4]]
+            Array([[1], [2]]).hstack(Array([[3], [4]])).data, [[1, 3], [2, 4]]
         )
 
-        self.assertEqual(
-            Array([[1, 2]]).vstack(Array([[3, 4]])).data,
-            [[1, 2],
-            [3, 4]]
-        )
+        self.assertEqual(Array([[1, 2]]).vstack(Array([[3, 4]])).data, [[1, 2], [3, 4]])
 
         # ===== Shape metadata =====
         self.assertEqual(a.ndim, 2)
@@ -204,26 +165,15 @@ class ArrayTests(unittest.TestCase):
         self.assertEqual(a.shape, (3, 3))
 
         # ===== tolist =====
-        self.assertEqual(
-            a.tolist(),
-            [[1, 2, 3],
-            [4, 5, 6],
-            [7, 8, 9]]
-        )
+        self.assertEqual(a.tolist(), [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
         # ===== item =====
         self.assertEqual(a.item(8), 9)
 
         # ===== Expand dims =====
-        self.assertEqual(
-            Array([1, 2, 3]).expand_dims(0).shape,
-            (1, 3)
-        )
+        self.assertEqual(Array([1, 2, 3]).expand_dims(0).shape, (1, 3))
 
-        self.assertEqual(
-            Array([1, 2, 3]).expand_dims(1).shape,
-            (3, 1)
-        )
+        self.assertEqual(Array([1, 2, 3]).expand_dims(1).shape, (3, 1))
 
         # ===== Zero / one element =====
         self.assertEqual(Array([42]).sum(), 42)
@@ -238,18 +188,18 @@ class ArrayTests(unittest.TestCase):
         self.assertEqual(big.T.shape, (10, 10))
         self.assertEqual(big.T[0, 9], 90)
         self.assertEqual(big.T[9, 0], 9)
-        
+
         a = Array([[[[1]]]])
         self.assertEqual(a.shape, (1, 1, 1, 1))
         self.assertEqual(a.ndim, 4)
-        self.assertEqual(a[0,0,0,0], 1)
-        
-        a = Array([1,2,3,4,5])
-        self.assertEqual(a[::-1].data, [5,4,3,2,1])
-        self.assertEqual(a[::2].data, [1,3,5])
-        self.assertEqual(a[1::2].data, [2,4])
-        self.assertEqual(a[-3:].data, [3,4,5])
-        
+        self.assertEqual(a[0, 0, 0, 0], 1)
+
+        a = Array([1, 2, 3, 4, 5])
+        self.assertEqual(a[::-1].data, [5, 4, 3, 2, 1])
+        self.assertEqual(a[::2].data, [1, 3, 5])
+        self.assertEqual(a[1::2].data, [2, 4])
+        self.assertEqual(a[-3:].data, [3, 4, 5])
+
         a = Array([])
         self.assertEqual(a.shape, (0,))
         self.assertEqual(a.size, 0)
@@ -259,66 +209,41 @@ class ArrayTests(unittest.TestCase):
 
         with self.assertRaises(ValidationError):
             a.max()
-        
-        a = Array([-5,-2,7,-9])
+
+        a = Array([-5, -2, 7, -9])
         self.assertEqual(a.min(), -9)
         self.assertEqual(a.max(), 7)
         self.assertEqual(a.argmax(), 2)
-        
-        a = Array([0.1,0.2,0.3])
+
+        a = Array([0.1, 0.2, 0.3])
         self.assertAlmostEqual(a.sum(), 0.6)
         self.assertAlmostEqual(a.mean(), 0.2)
-        
-        I = Array([
-            [1,0,0],
-            [0,1,0],
-            [0,0,1]
-        ])
-        A = Array([
-            [3,5,7],
-            [2,4,6],
-            [8,1,9]
-        ])
+
+        I = Array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        A = Array([[3, 5, 7], [2, 4, 6], [8, 1, 9]])
         self.assertEqual(A.matmul(I).data, A.data)
         self.assertEqual(I.matmul(A).data, A.data)
-        
-        a = Array([
-            [1,2,3],
-            [4,5,6]
-        ])
+
+        a = Array([[1, 2, 3], [4, 5, 6]])
         self.assertEqual(a.T.T.data, a.data)
-        
-        a = Array([1,2,3])
+
+        a = Array([1, 2, 3])
         self.assertEqual(a.dot(a), 14)
-        
-        a = Array([1,2,3])
-        b = Array([4,5])
+
+        a = Array([1, 2, 3])
+        b = Array([4, 5])
         c = a.outer(b)
-        self.assertEqual(c.shape, (3,2))
-        
-        a = Array([
-            [1,2,3],
-            [4,5,6]
-        ])
-        self.assertEqual(
-            a.T.data,
-            [
-                [1,4],
-                [2,5],
-                [3,6]
-            ]
-        )
-        
-        a = Array([
-            [1,2,3],
-            [4,5,6],
-            [7,8,9]
-        ])
+        self.assertEqual(c.shape, (3, 2))
+
+        a = Array([[1, 2, 3], [4, 5, 6]])
+        self.assertEqual(a.T.data, [[1, 4], [2, 5], [3, 6]])
+
+        a = Array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
         for i in range(3):
             for j in range(3):
-                self.assertEqual(a[i,j], i*3+j+1)
-    
+                self.assertEqual(a[i, j], i * 3 + j + 1)
+
     def test_invalid_operations_raise(self):
         # ===== Indexing =====
         with self.assertRaises(IndexError):

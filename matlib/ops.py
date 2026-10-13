@@ -14,15 +14,21 @@ def _apply_unary(data, fn):
 
 
 def log2(array):
-    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: math.log2(x))
+    return _apply_unary(
+        array.data if hasattr(array, "data") else array, lambda x: math.log2(x)
+    )
 
 
 def log10(array):
-    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: math.log10(x))
+    return _apply_unary(
+        array.data if hasattr(array, "data") else array, lambda x: math.log10(x)
+    )
 
 
 def square(array):
-    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: x * x)
+    return _apply_unary(
+        array.data if hasattr(array, "data") else array, lambda x: x * x
+    )
 
 
 def sin(array):
@@ -70,7 +76,10 @@ def ceil(array):
 
 
 def round(array, ndigits=None):
-    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: round(x, ndigits) if ndigits is not None else round(x))
+    return _apply_unary(
+        array.data if hasattr(array, "data") else array,
+        lambda x: round(x, ndigits) if ndigits is not None else round(x),
+    )
 
 
 def clip(array, min_value=None, max_value=None):
@@ -85,7 +94,10 @@ def clip(array, min_value=None, max_value=None):
 
 
 def sign(array):
-    return _apply_unary(array.data if hasattr(array, "data") else array, lambda x: 1 if x > 0 else -1 if x < 0 else 0)
+    return _apply_unary(
+        array.data if hasattr(array, "data") else array,
+        lambda x: 1 if x > 0 else -1 if x < 0 else 0,
+    )
 
 
 def exp(array):
