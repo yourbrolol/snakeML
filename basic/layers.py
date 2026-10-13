@@ -51,7 +51,7 @@ class Conv2D(Layer):
             from basic.initializers import XavierNormal
             initializer = XavierNormal()
         self.params['w'] = initializer([output_dim, input_dim, *kernel], input_dim, output_dim)
-        self.params['b'] = Constant()([output_dim])
+        self.params['b'] = Constant()(0, [output_dim])
         self.params['strd'] = stride
         self.params['krnl'] = kernel
         self.input = None

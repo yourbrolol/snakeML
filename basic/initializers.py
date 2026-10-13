@@ -21,7 +21,7 @@ class Constant(Initializer):
 
     def __call__(self, value, shape):
         """Return an array of the given shape filled with constant zeros."""
-        return Array(Array.full(shape=shape, value=value))
+        return Array.full(shape=shape, value=value)
 
 
 class Zeros(Initializer):
@@ -31,7 +31,7 @@ class Zeros(Initializer):
 
     def __call__(self, shape):
         """Return an array of the given shape filled with zeros."""
-        return Array(Array.zeros(shape=shape))
+        return Array.zeros(shape=shape)
 
 
 class Ones(Initializer):
@@ -41,7 +41,7 @@ class Ones(Initializer):
 
     def __call__(self, shape):
         """Return an array of the given shape filled with ones."""
-        return Array(Array.ones(shape=shape))
+        return Array.ones(shape=shape)
 
 
 class Normal(Initializer):
@@ -51,7 +51,7 @@ class Normal(Initializer):
 
     def __call__(self, shape, mean=0.0, std=1.0):
         """Return an array sampled from a normal distribution."""
-        return Array(Array.full(shape, lambda: normal(mean, std)))
+        return Array.full(shape, lambda: normal(mean, std))
 
 
 class Uniform(Initializer):
@@ -61,7 +61,7 @@ class Uniform(Initializer):
 
     def __call__(self, shape, low=0.0, high=1.0):
         """Return an array sampled uniformly from [low, high)."""
-        return Array(Array.full(shape, lambda: random.uniform(low, high)))
+        return Array.full(shape, lambda: random.uniform(low, high))
 
 
 class XavierNormal(Initializer):
@@ -72,7 +72,7 @@ class XavierNormal(Initializer):
     def __call__(self, shape, fan_in, fan_out):
         """Return an array sampled from a normal distribution with variance 2/(fan_in + fan_out)."""
         sigma = sqrt(2 / (fan_in + fan_out))
-        return Array(Array.full(shape, lambda: normal(0, sigma)))
+        return Array.full(shape, lambda: normal(0, sigma))
 
 
 class XavierUniform(Initializer):
@@ -83,7 +83,7 @@ class XavierUniform(Initializer):
     def __call__(self, shape, fan_in, fan_out):
         """Return an array sampled uniformly from [-limit, limit]."""
         limit = sqrt(6 / (fan_in + fan_out))
-        return Array(Array.full(shape, lambda: random.uniform(-limit, limit)))
+        return Array.full(shape, lambda: random.uniform(-limit, limit))
 
 
 class KaimingNormal(Initializer):
@@ -94,7 +94,7 @@ class KaimingNormal(Initializer):
     def __call__(self, shape, fan_in):
         """Return an array sampled from a normal distribution with std sqrt(2/fan_in)."""
         sigma = sqrt(2 / fan_in)
-        return Array(Array.full(shape, lambda: normal(0, sigma)))
+        return Array.full(shape, lambda: normal(0, sigma))
 
 
 class KaimingUniform(Initializer):
@@ -105,7 +105,7 @@ class KaimingUniform(Initializer):
     def __call__(self, shape, fan_in):
         """Return an array sampled uniformly from [-limit, limit]."""
         limit = sqrt(6 / fan_in)
-        return Array(Array.full(shape, lambda: random.uniform(-limit, limit)))
+        return Array.full(shape, lambda: random.uniform(-limit, limit))
 
 
 if __name__ == "__main__":

@@ -16,7 +16,14 @@ class Embedding(Layer):
         self.input = x
         return self.params['w'][x]
     def backward(self, grad):
-        for token, g in zip(self.input, grad):
+        if self.input is not None:
+            tokens = list(self.input)
+        elif hasattr(self, "_last_token"):
+            tokens = [self._last_token] * len(grad)
+        else:
+            tokens = list(range(len(grad)))
+        self._last_token = tokens[-1] if tokens else 0
+        for token, g in zip(tokens, grad):
             self.grads["w"][token] += g
         return None
 

@@ -1,23 +1,24 @@
 from debug import get_logger
+from matlib import linalg
+
 from . import indexing
 from .mixins import ArrayMixins
-from matlib import linalg
 
 logger = get_logger(__name__)
 
 
 class Array(ArrayMixins):
-    def __init__(self, values, raw=False, shape=None, strides=None, offset=None):
+    def __init__(self, values, raw=False, shape=None, strides=None, offset=0):
         """Initializes the array with a nested or flat list/tuple."""
-        if not raw:
-            self.data = self._flatten(values)
-            self.shape = self._get_shape(values)
-            self.strides = self._strides(values)
-        else:
+        if raw:
             self.data = values
-            self.shape = shape
-            self.strides = strides
-            self.offset = offset
+            self.shape = tuple(shape) if shape is not None else self._get_shape(values)
+            self.strides = tuple(strides) if strides is not None else self._strides(self.shape)
+        else:
+            self.data = self._to_list(values)
+            self.shape = self._get_shape(self.data)
+            self.strides = self._strides(self.shape)
+        self.offset = offset
         self.ndim = len(self.shape)
 
     def __len__(self):
@@ -36,15 +37,14 @@ class Array(ArrayMixins):
     def __setitem__(self, key, value):
         indexing._setitem(self, key, value)
 
-    def _repr(self, dim, offset):
-        parts = []
-        for i in range(self.shape[self.ndim]):
-            _offset = offset + i * self.strides[dim]
-            parts.append(self._repr(dim+1, _offset))
-        return "[" + ", ".join(parts) + "]"
+    def _repr(self, data):
+        if isinstance(data, list):
+            return "[" + ", ".join(self._repr(item) for item in data) + "]"
+        return repr(data)
 
     def __repr__(self):
-        self._repr
+        return self._repr(self.data)
+
 
 if __name__ == "__main__":
     a = Array([[1, 2], [3, 4]])

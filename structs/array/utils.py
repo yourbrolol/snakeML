@@ -135,16 +135,6 @@ class ArrayUtilsOps:
             total *= dim
         return total
 
-    @property
-    def strides(self):
-        """Returns the strides of the array, which indicate how many elements to skip to move along each axis."""
-        if self.ndim == 0:
-            return ()
-        strides = [1] * self.ndim
-        for i in range(self.ndim - 2, -1, -1):
-            strides[i] = strides[i + 1] * self.shape[i + 1]
-        return tuple(strides)
-
     @staticmethod
     def wraparray(value):
         """Return value as an Array, avoiding double-wrapping."""
