@@ -11,7 +11,27 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "mypy"]
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.mypy]
+# mypy >= 2.4 cannot target 3.9, so this is the lowest version it accepts.
+# The code itself stays 3.9-compatible at runtime: every modern syntax use is
+# either behind `from __future__ import annotations` or a sys.version_info
+# guard in structs/dtypes.py.
+python_version = "3.10"
+files = ["structs"]
+# These are the checks that matter for the annotations in structs/.
+warn_unused_configs = true
+warn_redundant_casts = true
+no_implicit_optional = true
+strict_equality = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# matlib and debug are not annotated yet.
+module = ["matlib.*", "debug.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
