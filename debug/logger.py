@@ -1,17 +1,52 @@
+"""Level-gated logger for snakeML runtime debugging.
+
+:class:`Logger` consults :mod:`debug.config` for enabled state, formats
+messages via :func:`debug.formatter.format_message`, augments them with
+bound and call-site context, prints them to the configured stream and
+optionally appends each payload to ``config["log_file"]``.
+"""
+
+from __future__ import annotations
+
 import inspect
 import sys
+from types import FrameType
+from typing import Any, Dict, Optional, TextIO, Union
 
 from .config import get_config, is_enabled
 from .formatter import format_message
 
+__all__ = ["Logger", "get_logger", "logger"]
+
 
 class Logger:
-    """Small logger tailored for snakeML's runtime debugging."""
+    """Small logger tailored for snakeML's runtime debugging.
 
-    def __init__(self, name="snakeML"):
+    Attributes:
+        name: Module label rendered in every formatted payload.
+        _default_context: Context merged ahead of per-call context by
+            :meth:`bind`-style instances.
+    """
+
+    def __init__(self, name: str = "snakeML") -> None:
         self.name = name
 
-    def _emit(self, level, message, *args, **kwargs):
+    def _emit(
+        self,
+        level: str,
+        message: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Render and dispatch one message through the debug pipeline.
+
+        Args:
+            level: Severity name, e.g. ``"debug"`` or ``"critical"``.
+            message: ``printf``-style format string.
+            *args: Substitutions for ``message`` (``%``-style).
+            **kwargs: Either ``stream`` (override output handle) or
+                ``context`` (extra metadata merged over bound context).
+        """
         if not is_enabled(level):
             return
         if args:
@@ -54,33 +89,51 @@ class Logger:
             # defensive: never let logging crash the application
             pass
 
-    def debug(self, message, *args, **kwargs):
+    def debug(self, message: str, *args: Any, **kwargs: Any) -> None:
         self._emit("debug", message, *args, **kwargs)
 
-    def info(self, message, *args, **kwargs):
+    def info(self, message: str, *args: Any, **kwargs: Any) -> None:
         self._emit("info", message, *args, **kwargs)
 
-    def warning(self, message, *args, **kwargs):
+    def warning(self, message: str, *args: Any, **kwargs: Any) -> None:
         self._emit("warning", message, *args, **kwargs)
 
-    def error(self, message, *args, **kwargs):
+    def error(self, message: str, *args: Any, **kwargs: Any) -> None:
         self._emit("error", message, *args, **kwargs)
 
-    def critical(self, message, *args, **kwargs):
+    def critical(self, message: str, *args: Any, **kwargs: Any) -> None:
         self._emit("critical", message, *args, **kwargs)
 
-    def log(self, level, message, *args, **kwargs):
+    def log(self, level: str, message: str, *args: Any, **kwargs: Any) -> None:
         self._emit(level, message, *args, **kwargs)
 
-    def bind(self, **default_context):
+    def bind(self, **default_context: Any) -> "Logger":
+        """Create a logger that always carries the given context.
+
+        Args:
+            **default_context: Metadata merged ahead of each call's
+                context for the returned logger.
+
+        Returns:
+            A new :class:`Logger` bound to these defaults.
+        """
         bound = Logger(name=self.name)
         bound._default_context = default_context.copy()
         return bound
 
 
-def get_logger(name=None):
+def get_logger(name: Optional[str] = None) -> Logger:
+    """Return a :class:`Logger` for the calling module.
+
+    Args:
+        name: Explicit logger name; when omitted, inferred from the
+            caller's ``__name__``.
+
+    Returns:
+        A named logger instance.
+    """
     if name is None:
-        frame = inspect.currentframe().f_back
+        frame: Optional[FrameType] = inspect.currentframe().f_back
         name = (
             frame.f_globals.get("__name__", "snakeML")
             if frame is not None
@@ -89,4 +142,4 @@ def get_logger(name=None):
     return Logger(name=name)
 
 
-logger = get_logger()
+logger: Logger = get_logger()

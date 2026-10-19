@@ -1,3 +1,15 @@
+"""Runtime debugging utilities for snakeML.
+
+Exposes exactly one small, orthogonal toolkit:
+
+- :mod:`debug.config` - global verbosity/stream/file configuration.
+- :mod:`debug.context` - ambient, context-local operation metadata.
+- :mod:`debug.logger` - level-gated formatting and emission.
+- :mod:`debug.errors` - the exception hierarchy above :class:`LibraryError`.
+- :mod:`debug.validator` - type/shape validation raising those errors.
+- :mod:`debug.diagnostics` - JSON snapshots of runtime objects.
+"""
+
 from .config import (
     configure,
     configure_from_env,
