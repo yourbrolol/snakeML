@@ -1,3 +1,5 @@
+"""Neural network layers, activations, losses and optimizers for snakeML."""
+
 from .activations import (
     GELU,
     Activation,

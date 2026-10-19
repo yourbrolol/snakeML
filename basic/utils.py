@@ -1,11 +1,39 @@
+"""Shared helpers for layer implementations.
+
+Currently hosts :func:`im2col`, the image-to-column patch extractor
+backing :class:`basic.layers.Conv2D`'s im2col-based convolution.
+"""
+
+from __future__ import annotations
+
+from typing import Any, List, Sequence, Tuple
+
 from debug import describe, get_logger, operation_context, summarize_diagnostics
 from debug.validator import ensure_type
 
 logger = get_logger(__name__)
 
+__all__ = ["im2col"]
 
-def im2col(input, kernel, stride):
-    """Extract image patches according to kernel size and stride."""
+
+def im2col(
+    input: Any,
+    kernel: Sequence[int],
+    stride: Sequence[int],
+) -> List[Any]:
+    """Extract image patches according to kernel size and stride.
+
+    Args:
+        input: Image of shape ``(C, H, W)`` (patch extraction is
+            channel-agnostic, spanning ``H`` and ``W`` only).
+        kernel: Two-element ``[KH, KW]`` patch size.
+        stride: Two-element ``[SH, SW]`` sampling stride for patch origins.
+
+    Returns:
+        A list of shape ``(C, KH, KW)`` patches ordered row-major over
+        patch origins, or an empty list when the kernel is larger than
+        the spatial extent of the input.
+    """
     with operation_context("im2col", kernel=kernel, stride=stride):
         logger.debug("enter im2col; input=%s", summarize_diagnostics(input))
         try:

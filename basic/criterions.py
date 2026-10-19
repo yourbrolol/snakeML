@@ -1,3 +1,13 @@
+"""Loss (criterion) functions measuring prediction quality.
+
+Each :class:`Loss` subclass provides ``forward`` (a scalar or array loss)
+and ``backward`` (the gradient w.r.t. predictions). Operations are
+wrapped in :func:`debug.operation_context` so failures surface with
+ambient debug context attached.
+"""
+
+from __future__ import annotations
+
 from debug import (
     collect_diagnostics,
     current_context,
@@ -12,25 +22,46 @@ from structs import Array
 
 logger = get_logger(__name__)
 
+__all__ = ["CrossEntropy", "Loss", "MSE"]
+
 
 class Loss:
-    def __init__(self, name):
+    """Base class for all loss criteria.
+
+    Attributes:
+        name: Human-readable criterion label.
+    """
+
+    def __init__(self, name: str) -> None:
         self.name = name
 
-    def forward(self, y_pred, y_true):
+    def forward(self, y_pred: Array, y_true: Array) -> Array:
         raise NotImplementedError
 
-    def backward(self, y_pred, y_true):
+    def backward(self, y_pred: Array, y_true: Array) -> Array:
         raise NotImplementedError
 
 
 class MSE(Loss):
-    def __init__(self):
-        """Mean Squared Error criterion."""
+    """Mean Squared Error criterion."""
+
+    def __init__(self) -> None:
         super().__init__("MSELoss")
 
-    def forward(self, y_pred, y_true):
-        """Compute the Mean Squared Error loss between predicted and ground truth values."""
+    def forward(self, y_pred: Array, y_true: Array) -> Array:
+        """Compute the Mean Squared Error loss between predicted and ground truth values.
+
+        Args:
+            y_pred: Predicted values, :class:`~structs.Array`.
+            y_true: Ground-truth values; lists are coerced to ``Array``.
+
+        Returns:
+            Element-wise ``0.5 * (y_pred - y_true) ** 2``.
+
+        Raises:
+            OperationError: When input validation fails; carries the
+                ambient debug context and the underlying error.
+        """
         with operation_context("MSE.forward"):
             logger.debug("enter forward; y_pred=%s", summarize_diagnostics(y_pred))
             logger.debug("enter forward; y_true=%s", summarize_diagnostics(y_true))
@@ -60,8 +91,16 @@ class MSE(Loss):
             logger.info("forward diagnostics: %s", summarize_diagnostics(out))
             return out
 
-    def backward(self, y_pred, y_true):
-        """Compute the gradient of MSE loss with respect to predictions."""
+    def backward(self, y_pred: Array, y_true: Array) -> Array:
+        """Compute the gradient of MSE loss with respect to predictions.
+
+        Args:
+            y_pred: Predicted values, :class:`~structs.Array`.
+            y_true: Ground-truth values; lists are coerced to ``Array``.
+
+        Returns:
+            ``y_pred - y_true``, the analytic MSE gradient.
+        """
         with operation_context("MSE.backward"):
             logger.debug("enter backward; y_pred=%s", summarize_diagnostics(y_pred))
             try:
@@ -98,11 +137,11 @@ class CrossEntropy(Loss):
     cross-entropy are differentiated together.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Cross-entropy criterion (assumes softmax has already been applied)."""
         super().__init__("CrossEntropyLoss")
 
-    def forward(self, y_pred, y_true):
+    def forward(self, y_pred: Array, y_true: Array) -> float:
         """Compute mean cross-entropy loss.
 
         Parameters
@@ -116,6 +155,10 @@ class CrossEntropy(Loss):
         -------
         float
             Scalar mean cross-entropy loss.
+
+        Raises:
+            OperationError: When input validation fails; carries the
+                ambient debug context and the underlying error.
         """
         with operation_context("CrossEntropy.forward"):
             logger.debug("enter forward; y_pred=%s", summarize_diagnostics(y_pred))
@@ -152,7 +195,7 @@ class CrossEntropy(Loss):
             logger.info("forward diagnostics: %s", summarize_diagnostics(y_pred))
             return loss
 
-    def backward(self, y_pred, y_true):
+    def backward(self, y_pred: Array, y_true: Array) -> Array:
         """Compute the gradient of the fused softmax + cross-entropy loss.
 
         Parameters
@@ -183,4 +226,3 @@ class CrossEntropy(Loss):
             grad = (y_pred - y_true) / n
             logger.debug("backward grad: %s", describe(grad))
             return grad
-

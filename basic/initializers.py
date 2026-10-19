@@ -1,109 +1,225 @@
+"""Parameter initializers producing :class:`~structs.Array` weights.
+
+Every initializer is a callable object: ``__call__`` accepts a shape
+(plus distribution parameters where relevant) and returns freshly
+initialized weights. Collectively they cover constant fills and the
+standard Xavier/Glorot and Kaiming schemes.
+"""
+
+from __future__ import annotations
+
 import random
 from math import sqrt
+from typing import Any, Callable, Dict, Optional, Sequence
 
 from matlib.rng import normal
 from structs import Array
 
+__all__ = [
+    "Constant",
+    "Initializer",
+    "KaimingNormal",
+    "KaimingUniform",
+    "Normal",
+    "Ones",
+    "Uniform",
+    "XavierNormal",
+    "XavierUniform",
+    "Zeros",
+]
+
 
 class Initializer:
-    def __init__(self):
-        """Base parameter initializer class."""
-        self.params = {}
+    """Base parameter initializer class.
 
-    def __call__(self, shape):
+    Attributes:
+        params: Hook for storing initializer-local state (unused here).
+    """
+
+    def __init__(self) -> None:
+        self.params: Dict[str, Any] = {}
+
+    def __call__(self, shape: Sequence[int]) -> Array:
         raise NotImplementedError
 
 
 class Constant(Initializer):
-    def __init__(self):
-        """Constant parameter initializer (zeros)."""
+    """Constant parameter initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, value, shape):
-        """Return an array of the given shape filled with constant zeros."""
+    def __call__(self, value: float, shape: Sequence[int]) -> Array:
+        """Return an array of the given shape filled with ``value``.
+
+        Args:
+            value: The constant fill value (callers pass ``0`` for zeros).
+            shape: Target shape.
+
+        Returns:
+            An ``Array`` of ``shape`` filled with ``value``.
+        """
         return Array.full(shape=shape, value=value)
 
 
 class Zeros(Initializer):
-    def __init__(self):
-        """Zero-valued parameter initializer."""
+    """Zero-valued parameter initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape):
-        """Return an array of the given shape filled with zeros."""
+    def __call__(self, shape: Sequence[int]) -> Array:
+        """Return an array of the given shape filled with zeros.
+
+        Args:
+            shape: Target shape.
+
+        Returns:
+            An ``Array`` of ``shape`` filled with ``0``.
+        """
         return Array.zeros(shape=shape)
 
 
 class Ones(Initializer):
-    def __init__(self):
-        """One-valued parameter initializer."""
+    """One-valued parameter initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape):
-        """Return an array of the given shape filled with ones."""
+    def __call__(self, shape: Sequence[int]) -> Array:
+        """Return an array of the given shape filled with ones.
+
+        Args:
+            shape: Target shape.
+
+        Returns:
+            An ``Array`` of ``shape`` filled with ``1``.
+        """
         return Array.ones(shape=shape)
 
 
 class Normal(Initializer):
-    def __init__(self):
-        """Random normal initializer."""
+    """Random normal initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape, mean=0.0, std=1.0):
-        """Return an array sampled from a normal distribution."""
+    def __call__(self, shape: Sequence[int], mean: float = 0.0, std: float = 1.0) -> Array:
+        """Return an array sampled from a normal distribution.
+
+        Args:
+            shape: Target shape.
+            mean: Distribution mean.
+            std: Distribution standard deviation.
+
+        Returns:
+            An ``Array`` of ``shape`` with ``N(mean, std^2)`` elements.
+        """
         return Array.full(shape, lambda: normal(mean, std))
 
 
 class Uniform(Initializer):
-    def __init__(self):
-        """Random uniform initializer."""
+    """Random uniform initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape, low=0.0, high=1.0):
-        """Return an array sampled uniformly from [low, high)."""
+    def __call__(self, shape: Sequence[int], low: float = 0.0, high: float = 1.0) -> Array:
+        """Return an array sampled uniformly from ``[low, high)``.
+
+        Args:
+            shape: Target shape.
+            low: Inclusive lower bound.
+            high: Exclusive upper bound.
+
+        Returns:
+            An ``Array`` of ``shape`` with uniform samples.
+        """
         return Array.full(shape, lambda: random.uniform(low, high))
 
 
 class XavierNormal(Initializer):
-    def __init__(self):
-        """Xavier/Glorot normal parameter initializer."""
+    """Xavier/Glorot normal parameter initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape, fan_in, fan_out):
-        """Return an array sampled from a normal distribution with variance 2/(fan_in + fan_out)."""
+    def __call__(self, shape: Sequence[int], fan_in: int, fan_out: int) -> Array:
+        """Return an array sampled from a normal distribution with variance 2/(fan_in + fan_out).
+
+        Args:
+            shape: Target shape.
+            fan_in: Number of inputs feeding each unit.
+            fan_out: Number of outputs each unit feeds.
+
+        Returns:
+            An ``Array`` with ``N(0, 2/(fan_in + fan_out))`` elements.
+        """
         sigma = sqrt(2 / (fan_in + fan_out))
         return Array.full(shape, lambda: normal(0, sigma))
 
 
 class XavierUniform(Initializer):
-    def __init__(self):
-        """Xavier/Glorot uniform parameter initializer."""
+    """Xavier/Glorot uniform parameter initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape, fan_in, fan_out):
-        """Return an array sampled uniformly from [-limit, limit]."""
+    def __call__(self, shape: Sequence[int], fan_in: int, fan_out: int) -> Array:
+        """Return an array sampled uniformly from ``[-limit, limit]``.
+
+        ``limit = sqrt(6 / (fan_in + fan_out))``.
+
+        Args:
+            shape: Target shape.
+            fan_in: Number of inputs feeding each unit.
+            fan_out: Number of outputs each unit feeds.
+
+        Returns:
+            An ``Array`` with Glorot-uniform elements.
+        """
         limit = sqrt(6 / (fan_in + fan_out))
         return Array.full(shape, lambda: random.uniform(-limit, limit))
 
 
 class KaimingNormal(Initializer):
-    def __init__(self):
-        """Kaiming normal parameter initializer."""
+    """Kaiming normal parameter initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape, fan_in):
-        """Return an array sampled from a normal distribution with std sqrt(2/fan_in)."""
+    def __call__(self, shape: Sequence[int], fan_in: int) -> Array:
+        """Return an array sampled from a normal distribution with std sqrt(2/fan_in).
+
+        Args:
+            shape: Target shape.
+            fan_in: Number of inputs feeding each unit (He's variance scale).
+
+        Returns:
+            An ``Array`` with ``N(0, 2/fan_in)`` elements.
+        """
         sigma = sqrt(2 / fan_in)
         return Array.full(shape, lambda: normal(0, sigma))
 
 
 class KaimingUniform(Initializer):
-    def __init__(self):
-        """Kaiming uniform parameter initializer."""
+    """Kaiming uniform parameter initializer."""
+
+    def __init__(self) -> None:
         super().__init__()
 
-    def __call__(self, shape, fan_in):
-        """Return an array sampled uniformly from [-limit, limit]."""
+    def __call__(self, shape: Sequence[int], fan_in: int) -> Array:
+        """Return an array sampled uniformly from ``[-limit, limit]``.
+
+        ``limit = sqrt(6 / fan_in)``.
+
+        Args:
+            shape: Target shape.
+            fan_in: Number of inputs feeding each unit (He's bound scale).
+
+        Returns:
+            An ``Array`` with Kaiming-uniform elements.
+        """
         limit = sqrt(6 / fan_in)
         return Array.full(shape, lambda: random.uniform(-limit, limit))
 
