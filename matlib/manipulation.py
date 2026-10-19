@@ -1,4 +1,14 @@
+"""Array manipulation: concatenation, stacking, splitting and flipping.
+
+All functions return freshly built nested lists, using
+:mod:`structs.utils` primitives (``zeroes``, ``indices``, ``set_nested``)
+to construct and index results.
+"""
+
+from __future__ import annotations
+
 import builtins as _builtins
+from typing import Any, Iterable, List, Sequence, Tuple, Union
 
 from debug import get_logger
 from debug.errors import ShapeError, ValidationError
@@ -8,23 +18,26 @@ logger = get_logger(__name__)
 
 builtins_sum = _builtins.sum
 
+__all__ = ["concatenate", "flip", "stack", "split", "unbind"]
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
 
-def _get_data(a):
+def _get_data(a: Any) -> Any:
     """Return the raw nested-list data from an Array or a plain list."""
     return a.data if hasattr(a, "data") else a
 
 
-def _get_shape(a):
+def _get_shape(a: Any) -> Tuple[int, ...]:
     """Return the shape tuple from an Array or compute it for a plain list."""
     if hasattr(a, "shape"):
         return a.shape
 
-    def _shape(x):
+    def _shape(x: Any) -> Tuple[int, ...]:
+        """Recursively derive the shape of a plain nested list."""
         if not isinstance(x, list):
             return ()
         if not x:
@@ -39,7 +52,7 @@ def _get_shape(a):
 # ---------------------------------------------------------------------------
 
 
-def concatenate(arrays, axis=0):
+def concatenate(arrays: Sequence[Any], axis: int = 0) -> List[Any]:
     """Join a sequence of arrays along an existing axis.
 
     Parameters
@@ -60,6 +73,11 @@ def concatenate(arrays, axis=0):
 
         concatenate([a, b], axis=0)   # stack rows
         concatenate([a, b], axis=1)   # append columns
+
+    Raises:
+        ValidationError: If ``arrays`` is empty.
+        ShapeError: If array ranks differ or any non-``axis`` dimension
+            mismatches across the sequence.
     """
     if not arrays:
         logger.error("concatenate called with empty sequence")
@@ -113,7 +131,7 @@ def concatenate(arrays, axis=0):
     return result
 
 
-def flip(array, axis):
+def flip(array: Any, axis: int) -> List[Any]:
     """Flip the array along the specified axis.
 
     Parameters
@@ -160,7 +178,7 @@ def flip(array, axis):
 # ---------------------------------------------------------------------------
 
 
-def stack(arrays, axis=0):
+def stack(arrays: Sequence[Any], axis: int = 0) -> List[Any]:
     """Join a sequence of arrays along a *new* axis.
 
     Parameters
@@ -181,6 +199,10 @@ def stack(arrays, axis=0):
 
         stack([a, b], axis=0)   # shape (2, *a.shape)
         stack([a, b], axis=1)   # shape (a.shape[0], 2, *a.shape[1:])
+
+    Raises:
+        ValidationError: If ``arrays`` is empty.
+        ShapeError: If the arrays' shapes are not identical.
     """
     if not arrays:
         logger.error("stack called with empty sequence")
@@ -220,7 +242,11 @@ def stack(arrays, axis=0):
 # ---------------------------------------------------------------------------
 
 
-def split(array, indices_or_sections, axis=0):
+def split(
+    array: Any,
+    indices_or_sections: Union[int, Sequence[int]],
+    axis: int = 0,
+) -> List[Any]:
     """Split an array into multiple sub-arrays along an axis.
 
     Parameters
@@ -298,7 +324,7 @@ def split(array, indices_or_sections, axis=0):
 # ---------------------------------------------------------------------------
 
 
-def unbind(array, axis=0):
+def unbind(array: Any, axis: int = 0) -> List[Any]:
     """Remove a dimension by returning all slices along it.
 
     Equivalent to indexing every position along *axis* and collecting the

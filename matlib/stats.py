@@ -1,4 +1,15 @@
+"""Statistical reductions: global (flat) and axis-aware forms.
+
+The global helpers (``sum``, ``mean``, ...) accept a flat iterable;
+the ``*_axis`` family reduces a full :class:`~structs.array.array.Array`
+along one or more axes via :func:`_reduce_axis`, optionally keeping
+the reduced dimension.
+"""
+
+from __future__ import annotations
+
 import math
+from typing import Any, Callable, Iterable, Optional, Tuple, Union
 
 from debug import get_logger
 from debug.errors import ValidationError
@@ -6,8 +17,32 @@ from structs.utils import indices, set_nested, zeroes
 
 logger = get_logger(__name__)
 
+__all__ = [
+    "argmax",
+    "argmax_axis",
+    "argmin",
+    "argmin_axis",
+    "count_nonzero",
+    "count_nonzero_axis",
+    "max",
+    "max_axis",
+    "mean",
+    "mean_axis",
+    "min",
+    "min_axis",
+    "norm",
+    "norm_axis",
+    "prod",
+    "prod_axis",
+    "std",
+    "sum",
+    "sum_axis",
+    "variance",
+    "variance_axis",
+]
 
-def _sum_values(flat):
+
+def _sum_values(flat: Iterable[Any]) -> Any:
     """Accumulate and return the sum of flat elements."""
     total = 0
     for value in flat:
@@ -20,13 +55,17 @@ def _sum_values(flat):
 # ---------------------------------------------------------------------------
 
 
-def sum(flat):
+def sum(flat: Iterable[Any]) -> Any:
     """Returns the sum of all elements in a flat list."""
     return _sum_values(flat)
 
 
-def mean(flat):
-    """Returns the mean of all elements in a flat list."""
+def mean(flat: Iterable[Any]) -> float:
+    """Returns the mean of all elements in a flat list.
+
+    Raises:
+        ValidationError: If ``flat`` is empty.
+    """
     flat = list(flat)
     if not flat:
         logger.error("mean called on empty collection")
@@ -34,8 +73,12 @@ def mean(flat):
     return _sum_values(flat) / len(flat)
 
 
-def variance(flat):
-    """Returns the population variance of all elements in a flat list."""
+def variance(flat: Iterable[Any]) -> float:
+    """Returns the population variance of all elements in a flat list.
+
+    Raises:
+        ValidationError: If ``flat`` is empty.
+    """
     flat = list(flat)
     if not flat:
         logger.error("variance called on empty collection")
@@ -44,8 +87,12 @@ def variance(flat):
     return _sum_values((x - m) ** 2 for x in flat) / len(flat)
 
 
-def std(flat):
-    """Returns the standard deviation of all elements in a flat list."""
+def std(flat: Iterable[Any]) -> float:
+    """Returns the standard deviation of all elements in a flat list.
+
+    Raises:
+        ValidationError: If ``flat`` is empty.
+    """
     flat = list(flat)
     if not flat:
         logger.error("std called on empty collection")
@@ -53,8 +100,12 @@ def std(flat):
     return math.sqrt(variance(flat))
 
 
-def max(flat):
-    """Returns the maximum value from a flat list."""
+def max(flat: Iterable[Any]) -> Any:
+    """Returns the maximum value from a flat list.
+
+    Raises:
+        ValidationError: If ``flat`` is empty.
+    """
     flat = list(flat)
     if not flat:
         logger.error("max called on empty collection")
@@ -66,8 +117,12 @@ def max(flat):
     return result
 
 
-def min(flat):
-    """Returns the minimum value from a flat list."""
+def min(flat: Iterable[Any]) -> Any:
+    """Returns the minimum value from a flat list.
+
+    Raises:
+        ValidationError: If ``flat`` is empty.
+    """
     flat = list(flat)
     if not flat:
         logger.error("min called on empty collection")
@@ -79,7 +134,7 @@ def min(flat):
     return result
 
 
-def prod(flat):
+def prod(flat: Iterable[Any]) -> Any:
     """Returns the product of all values in a flat list."""
     flat = list(flat)
     result = 1
@@ -88,8 +143,14 @@ def prod(flat):
     return result
 
 
-def argmax(flat):
-    """Returns the index of the maximum value in a flat list."""
+def argmax(flat: Iterable[Any]) -> int:
+    """Returns the index of the maximum value in a flat list.
+
+    Ties resolve to the first (lowest-index) occurrence.
+
+    Raises:
+        ValidationError: If ``flat`` is empty.
+    """
     flat = list(flat)
     if not flat:
         raise ValidationError("argmax of empty array")
@@ -102,8 +163,14 @@ def argmax(flat):
     return best_idx
 
 
-def argmin(flat):
-    """Returns the index of the minimum value in a flat list."""
+def argmin(flat: Iterable[Any]) -> int:
+    """Returns the index of the minimum value in a flat list.
+
+    Ties resolve to the first (lowest-index) occurrence.
+
+    Raises:
+        ValidationError: If ``flat`` is empty.
+    """
     flat = list(flat)
     if not flat:
         raise ValidationError("argmin of empty array")
@@ -116,12 +183,12 @@ def argmin(flat):
     return best_idx
 
 
-def count_nonzero(flat):
+def count_nonzero(flat: Iterable[Any]) -> int:
     """Returns the number of non-zero entries in a flat list."""
     return sum(1 for value in flat if value != 0)
 
 
-def norm(flat):
+def norm(flat: Iterable[Any]) -> float:
     """Returns the L2 norm of a flat list."""
     return math.sqrt(sum(value * value for value in flat))
 
@@ -131,7 +198,12 @@ def norm(flat):
 # ---------------------------------------------------------------------------
 
 
-def _reduce_axis(array, axis, reduce_fn, keepdims=False):
+def _reduce_axis(
+    array: Any,
+    axis: int,
+    reduce_fn: Callable[[Iterable[Any]], Any],
+    keepdims: bool = False,
+) -> Any:
     """Apply reduce_fn along a single axis of an Array-like object.
 
     Parameters
@@ -191,8 +263,23 @@ def _reduce_axis(array, axis, reduce_fn, keepdims=False):
     return result
 
 
-def sum_axis(array, axis=None, keepdims=False):
-    """Sum along a given axis or axes."""
+def sum_axis(
+    array: Any,
+    axis: Optional[Union[int, Tuple[int, ...]]] = None,
+    keepdims: bool = False,
+) -> Any:
+    """Sum along a given axis or axes.
+
+    Args:
+        array: Input array.
+        axis: ``None`` reduces over every axis (last to first); a tuple
+            reduces each listed axis (highest first to avoid index
+            shifts); an ``int`` reduces that single axis.
+        keepdims: Keep reduced axes as dimensions of size 1.
+
+    Returns:
+        The reduced array (scalar when fully reduced).
+    """
 
     # Sum all elements
     if axis is None:
@@ -216,46 +303,70 @@ def sum_axis(array, axis=None, keepdims=False):
     return _reduce_axis(array, axis, _sum_values, keepdims=keepdims)
 
 
-def mean_axis(array, axis, keepdims=False):
-    """Mean along a given axis."""
+def mean_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
+    """Mean along a given axis.
+
+    Raises:
+        ValidationError: If a reduced slice is empty (via :func:`mean`).
+    """
     return _reduce_axis(array, axis, mean, keepdims=keepdims)
 
 
-def variance_axis(array, axis, keepdims=False):
-    """Population variance along a given axis."""
+def variance_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
+    """Population variance along a given axis.
+
+    Raises:
+        ValidationError: If a reduced slice is empty (via :func:`variance`).
+    """
     return _reduce_axis(array, axis, variance, keepdims=keepdims)
 
 
-def max_axis(array, axis, keepdims=False):
-    """Maximum value along a given axis."""
+def max_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
+    """Maximum value along a given axis.
+
+    Raises:
+        ValidationError: If a reduced slice is empty (via :func:`max`).
+    """
     return _reduce_axis(array, axis, max, keepdims=keepdims)
 
 
-def min_axis(array, axis, keepdims=False):
-    """Minimum value along a given axis."""
+def min_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
+    """Minimum value along a given axis.
+
+    Raises:
+        ValidationError: If a reduced slice is empty (via :func:`min`).
+    """
     return _reduce_axis(array, axis, min, keepdims=keepdims)
 
 
-def prod_axis(array, axis, keepdims=False):
+def prod_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
     """Product along a given axis."""
     return _reduce_axis(array, axis, prod, keepdims=keepdims)
 
 
-def argmax_axis(array, axis, keepdims=False):
-    """Argmax along a given axis."""
+def argmax_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
+    """Argmax along a given axis.
+
+    Raises:
+        ValidationError: If a reduced slice is empty (via :func:`argmax`).
+    """
     return _reduce_axis(array, axis, argmax, keepdims=keepdims)
 
 
-def argmin_axis(array, axis, keepdims=False):
-    """Argmin along a given axis."""
+def argmin_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
+    """Argmin along a given axis.
+
+    Raises:
+        ValidationError: If a reduced slice is empty (via :func:`argmin`).
+    """
     return _reduce_axis(array, axis, argmin, keepdims=keepdims)
 
 
-def count_nonzero_axis(array, axis, keepdims=False):
+def count_nonzero_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
     """Count of non-zero values along a given axis."""
     return _reduce_axis(array, axis, count_nonzero, keepdims=keepdims)
 
 
-def norm_axis(array, axis, keepdims=False):
+def norm_axis(array: Any, axis: int, keepdims: bool = False) -> Any:
     """L2 norm along a given axis."""
     return _reduce_axis(array, axis, norm, keepdims=keepdims)

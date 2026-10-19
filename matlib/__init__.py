@@ -1,3 +1,15 @@
+"""Math kernel library for snakeML.
+
+Pure-Python array math over :mod:`structs` primitives: broadcasting and
+element-wise ops (:mod:`matlib.broadcasting`, :mod:`matlib.ops`),
+linalg (:mod:`matlib.linalg`), shape manipulation
+(:mod:`matlib.manipulation`), reductions (:mod:`matlib.stats`) and RNG
+sampling (:mod:`matlib.rng`).
+
+Note: re-exported names such as ``abs``, ``sum``, ``min`` and ``max``
+intentionally shadow their builtins within this module.
+"""
+
 from .broadcasting import broadcast, elementwise
 from .linalg import (
     cholesky,
