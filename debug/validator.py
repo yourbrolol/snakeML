@@ -8,7 +8,7 @@ with a descriptive message otherwise.
 
 from __future__ import annotations
 
-from typing import Any, Sequence, Tuple, Type, Union
+from typing import Any, Optional, Sequence, Tuple, Type, Union
 
 from .errors import ShapeError, TypeMismatchError, ValidationError
 
@@ -44,8 +44,9 @@ def ensure_type(
             return value
     elif isinstance(value, expected_type):
         return value
+    expected_name = getattr(expected_type, "__name__", str(expected_type))
     raise TypeMismatchError(
-        f"{name} must be of type {expected_type.__name__}, got {type(value).__name__}."
+        f"{name} must be of type {expected_name}, got {type(value).__name__}."
     )
 
 
@@ -83,7 +84,7 @@ def validate(
     value: Any,
     *,
     expected_type: Union[Type[Any], Tuple[Type[Any], ...], None] = None,
-    expected_shape: Sequence[int] = None,
+    expected_shape: Optional[Sequence[int]] = None,
     name: str = "value",
 ) -> Any:
     """Convenience helper running both type and shape validation.

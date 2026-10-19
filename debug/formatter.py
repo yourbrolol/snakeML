@@ -44,9 +44,10 @@ def format_message(
     parts = [f"[{prefix}][{level_name}]"]
 
     if module is None:
+        caller = inspect.currentframe()
         module = (
-            inspect.currentframe().f_back.f_globals.get("__name__", "unknown")
-            if inspect.currentframe() and inspect.currentframe().f_back
+            caller.f_back.f_globals.get("__name__", "unknown")
+            if caller is not None and caller.f_back is not None
             else "unknown"
         )
     if config.get("include_module", True):

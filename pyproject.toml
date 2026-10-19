@@ -22,16 +22,10 @@ where = ["."]
 # either behind `from __future__ import annotations` or a sys.version_info
 # guard in structs/dtypes.py.
 python_version = "3.10"
-files = ["structs"]
+files = ["structs", "matlib", "debug"]
 # These are the checks that matter for the annotations in structs/.
 warn_unused_configs = true
 warn_redundant_casts = true
 no_implicit_optional = true
 strict_equality = true
 check_untyped_defs = true
-
-[[tool.mypy.overrides]]
-# matlib and debug are not annotated yet.
-module = ["matlib.*", "debug.*"]
-ignore_missing_imports = true
-follow_imports = "skip"

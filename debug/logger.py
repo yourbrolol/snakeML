@@ -31,6 +31,9 @@ class Logger:
     def __init__(self, name: str = "snakeML") -> None:
         self.name = name
 
+    #: Context merged ahead of each call's context (populated by :meth:`bind`).
+    _default_context: Optional[Dict[str, Any]]
+
     def _emit(
         self,
         level: str,
@@ -61,8 +64,9 @@ class Logger:
                 context = dict(context)
             except Exception:
                 context = {"context": context}
-        if hasattr(self, "_default_context"):
-            context = {**self._default_context, **context}
+        defaults = getattr(self, "_default_context", None)
+        if defaults is not None:
+            context = {**defaults, **context}
         context.update(kwargs)
         payload = format_message(
             message, level=level, module=self.name, context=context or None
@@ -72,7 +76,7 @@ class Logger:
         # optionally persist logs to a file when enabled in config
         try:
             if config.get("save") and config.get("log_file"):
-                log_path = config.get("log_file")
+                log_path: Any = config.get("log_file")
                 try:
                     with open(log_path, "a", encoding="utf-8") as f:
                         f.write(payload + "\n")
@@ -133,10 +137,10 @@ def get_logger(name: Optional[str] = None) -> Logger:
         A named logger instance.
     """
     if name is None:
-        frame: Optional[FrameType] = inspect.currentframe().f_back
+        caller = inspect.currentframe()
         name = (
-            frame.f_globals.get("__name__", "snakeML")
-            if frame is not None
+            caller.f_back.f_globals.get("__name__", "snakeML")
+            if caller is not None and caller.f_back is not None
             else "snakeML"
         )
     return Logger(name=name)

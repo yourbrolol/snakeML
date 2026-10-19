@@ -204,7 +204,7 @@ def transpose(array: Any) -> List[List[Any]]:
     return [[array[r][c] for r in range(rows)] for c in range(cols)]
 
 
-def permute(array: Any, axes: Sequence[int]) -> List[Any]:
+def permute(array: Any, axes: Sequence[int]) -> Any:
     """Permute the dimensions of an N-D array according to the given axes order.
 
     Parameters
@@ -264,6 +264,8 @@ def tensordot(
         ShapeError: If the two contraction-axis lists differ in length.
         ValidationError: If an integer ``axes`` argument is negative.
     """
+    axes_a: List[int]
+    axes_b: List[int]
     if isinstance(axes, int):
         if axes < 0:
             logger.error("invalid tensordot axes", axes=axes)
@@ -272,9 +274,8 @@ def tensordot(
         axes_a = list(range(a.ndim - axes, a.ndim))
         axes_b = list(range(axes))
     else:
-        axes_a, axes_b = axes
-        axes_a = list(axes_a)
-        axes_b = list(axes_b)
+        axes_a = list(axes[0])
+        axes_b = list(axes[1])
 
     axes_a = [ax % a.ndim for ax in axes_a]
     axes_b = [ax % b.ndim for ax in axes_b]

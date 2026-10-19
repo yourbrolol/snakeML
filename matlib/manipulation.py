@@ -52,7 +52,7 @@ def _get_shape(a: Any) -> Tuple[int, ...]:
 # ---------------------------------------------------------------------------
 
 
-def concatenate(arrays: Sequence[Any], axis: int = 0) -> List[Any]:
+def concatenate(arrays: Sequence[Any], axis: int = 0) -> Any:
     """Join a sequence of arrays along an existing axis.
 
     Parameters
@@ -131,7 +131,7 @@ def concatenate(arrays: Sequence[Any], axis: int = 0) -> List[Any]:
     return result
 
 
-def flip(array: Any, axis: int) -> List[Any]:
+def flip(array: Any, axis: int) -> Any:
     """Flip the array along the specified axis.
 
     Parameters
@@ -178,7 +178,7 @@ def flip(array: Any, axis: int) -> List[Any]:
 # ---------------------------------------------------------------------------
 
 
-def stack(arrays: Sequence[Any], axis: int = 0) -> List[Any]:
+def stack(arrays: Sequence[Any], axis: int = 0) -> Any:
     """Join a sequence of arrays along a *new* axis.
 
     Parameters
