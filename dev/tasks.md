@@ -1,8 +1,10 @@
 # Project Tasks
 ## Rated by importance
 ### Critical
+- Make Array use buffer type data.
 
 ### High
+- Make an autograd.
 
 ### Medium
 
