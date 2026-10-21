@@ -1,7 +1,6 @@
 # Project Tasks
 ## Rated by importance
 ### Critical
-- Make Array use buffer type data.
 
 ### High
 - Make an autograd.
@@ -12,6 +11,7 @@
 
 ## Other
 ### In progress (name -> branch name)
+- Make Array use buffer type data -> refactor/bufferize.
 
 ### Investigating (name -> user : Optional)
 
