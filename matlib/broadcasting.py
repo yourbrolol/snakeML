@@ -1,7 +1,39 @@
-def broadcast(a, b):
-    """Normalize input array structures for compatible broadcasting and matrix operations."""
-    def _is_1d(obj):
-        if hasattr(obj, 'ndim'):
+"""Broadcasting and element-wise operators for nested-list data.
+
+Provides the shape-normalization helpers used by
+:class:`structs.array.array.Array` before dispatching binary operations,
+plus the recursive scalar broadcast engine itself.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Callable, List, Optional, Tuple, Union
+
+__all__ = ["broadcast", "elementwise"]
+
+
+def broadcast(a: Any, b: Any) -> Tuple[Any, Any, str]:
+    """Normalize input array structures for compatible broadcasting and matrix operations.
+
+    1-D inputs are reshaped towards alignment with their counterpart
+    (``a`` becomes a row, ``b`` becomes a column vector); scalar inputs
+    are wrapped into single-element containers. The returned
+    ``squeeze_type`` records how to project the operation result back.
+
+    Args:
+        a: Left operand: :class:`~structs.array.array.Array`, list or scalar.
+        b: Right operand in the same accepted forms.
+
+    Returns:
+        ``(a_data, b_data, squeeze_type)`` where ``a_data``/``b_data`` are
+        normalized nested lists (via ``.data`` when the input exposes it)
+        and ``squeeze_type`` is one of ``"none"``, ``"row"``,
+        ``"column"`` or ``"scalar"``.
+    """
+
+    def _is_1d(obj: Any) -> bool:
+        """Return whether *obj* behaves like a one-dimensional sequence."""
+        if hasattr(obj, "ndim"):
             try:
                 return obj.ndim == 1
             except Exception:
@@ -17,8 +49,8 @@ def broadcast(a, b):
     a_is_1d = _is_1d(a)
     b_is_1d = _is_1d(b)
 
-    a_data = a.data if hasattr(a, 'data') else a
-    b_data = b.data if hasattr(b, 'data') else b
+    a_data = a.data if hasattr(a, "data") else a
+    b_data = b.data if hasattr(b, "data") else b
 
     # Normalize to nested-list shapes: (N,) -> (1, N) and (N,) -> (N, 1)
     if a_is_1d:
@@ -34,99 +66,54 @@ def broadcast(a, b):
             b_data = [[b_data]]
 
     if a_is_1d and b_is_1d:
-        squeeze_type = 'scalar'
+        squeeze_type = "scalar"
     elif b_is_1d:
-        squeeze_type = 'column'
+        squeeze_type = "column"
     elif a_is_1d:
-        squeeze_type = 'row'
+        squeeze_type = "row"
     else:
-        squeeze_type = 'none'
+        squeeze_type = "none"
 
     return a_data, b_data, squeeze_type
 
-def _get_shape(data):
-    if not isinstance(data, list):
-        return ()
-    if not data:
-        return (0,)
-    return (len(data),) + _get_shape(data[0])
 
+def elementwise(a: Any, b: Any, op: Callable[[Any, Any], Any]) -> Any:
+    """Applies a math operator element-wise between self and another Array/scalar.
 
-def _broadcast_shapes(shape_a, shape_b):
-    ndim = max(len(shape_a), len(shape_b))
-    shape_a = (1,) * (ndim - len(shape_a)) + shape_a
-    shape_b = (1,) * (ndim - len(shape_b)) + shape_b
-    out = []
-    for dim_a, dim_b in zip(shape_a, shape_b):
-        if dim_a == dim_b or dim_a == 1 or dim_b == 1:
-            out.append(max(dim_a, dim_b))
-        else:
-            raise ValueError("Shapes cannot be broadcast")
-    return tuple(out)
+    Lists of equal length pair positionally; a length-1 list broadcasts
+    across its counterpart; a single list operand broadcasts its scalar
+    partner. Mismatched lengths raise :class:`ValueError`.
 
+    Args:
+        a: Left operand (nested list, scalar or array-like).
+        b: Right operand in the same accepted forms.
+        op: Two-argument callable applied to each broadcast pair.
 
-def _elementwise_broadcast(a, b, op, shape_a, shape_b, out_shape, ndim_a=None, ndim_b=None):
-    if not out_shape:
-        return op(a, b)
+    Returns:
+        The nested-list result of broadcasting ``op`` over the pair.
 
-    if ndim_a is None:
-        ndim_a = len(shape_a)
-    if ndim_b is None:
-        ndim_b = len(shape_b)
-
-    ndim = len(out_shape)
-    shape_a = (1,) * (ndim - len(shape_a)) + shape_a
-    shape_b = (1,) * (ndim - len(shape_b)) + shape_b
-
-    padded_a = ndim_a < ndim
-    padded_b = ndim_b < ndim
-
-    out_len = out_shape[0]
-    result = []
-    for i in range(out_len):
-        if padded_a:
-            elem_a = a
-        elif shape_a[0] == 1:
-            elem_a = a[0]
-        else:
-            elem_a = a[i]
-
-        if padded_b:
-            elem_b = b
-        elif shape_b[0] == 1:
-            elem_b = b[0]
-        else:
-            elem_b = b[i]
-
-        next_ndim_a = ndim_a if padded_a else ndim_a - 1
-        next_ndim_b = ndim_b if padded_b else ndim_b - 1
-
-        result.append(
-            _elementwise_broadcast(
-                elem_a,
-                elem_b,
-                op,
-                _get_shape(elem_a) if isinstance(elem_a, list) else (),
-                _get_shape(elem_b) if isinstance(elem_b, list) else (),
-                out_shape[1:],
-                next_ndim_a,
-                next_ndim_b,
-            )
-        )
-    return result
-
-
-def elementwise(a, b, op):
-    """Applies a math operator element-wise between self and another Array/scalar."""
+    Raises:
+        ValueError: If two list operands have unequal, non-broadcastable
+            lengths.
+    """
+    # both scalars
     if not isinstance(a, list) and not isinstance(b, list):
         return op(a, b)
 
+    # both lists: recurse element-wise; require same shape or zip will truncate
     if isinstance(a, list) and isinstance(b, list):
-        shape_a = _get_shape(a)
-        shape_b = _get_shape(b)
-        out_shape = _broadcast_shapes(shape_a, shape_b)
-        return _elementwise_broadcast(a, b, op, shape_a, shape_b, out_shape)
+        if len(a) == len(b):
+            return [elementwise(x, y, op) for x, y in zip(a, b)]
 
+        if len(a) == 1:
+            return [elementwise(a[0], y, op) for y in b]
+
+        if len(b) == 1:
+            return [elementwise(x, b[0], op) for x in a]
+
+        raise ValueError("Shapes cannot be broadcast")
+
+    # one side is list: broadcast scalar across list
     if isinstance(a, list):
         return [elementwise(item_a, b, op) for item_a in a]
     if isinstance(b, list):

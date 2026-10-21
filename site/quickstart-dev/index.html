@@ -1,0 +1,1133 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The ML library made in Python and for Python.">
+      
+      
+      
+      
+        <link rel="prev" href="../quickstart/">
+      
+      
+        <link rel="next" href="../api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Quick start (dev) - SnakeML</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#quick-start-dev" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="SnakeML" class="md-header__button md-logo" aria-label="SnakeML" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SnakeML
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Quick start (dev)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/yourbrolol/SnakeML" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SnakeML" class="md-nav__button md-logo" aria-label="SnakeML" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SnakeML
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/yourbrolol/SnakeML" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start (dev)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start (dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-0-debug-the-nervous-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 0 — debug/: the nervous system
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-1-matlib-dtype-agnostic-math-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 1 — matlib/: dtype-agnostic math kernels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-2-structs-the-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 2 — structs/: the Array
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Level 2 — structs/: the Array">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structsdtypespy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/dtypes.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structsarrayprotocolpy-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/array/protocol.py — the contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structsarraymixinspy-the-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/array/mixins.py — the composition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-four-behavioral-mixins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four behavioral mixins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structsarrayindexingpy-and-statspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/array/indexing.py and stats.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-3-basic-layers-losses-optimizers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 3 — basic/: layers, losses, optimizers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Level 3 — basic/: layers, losses, optimizers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basiclayerspy-the-core-abstraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/layers.py — the core abstraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicactivationspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/activations.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basiccriterionspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/criterions.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicoptimizerspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/optimizers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicnnpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/nn.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicinitializerspy-basictransformerspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/initializers.py &amp; basic/transformers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-4-localdev-and-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 4 — localdev/ and tests/
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suggested-reading-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suggested reading order
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-0-debug-the-nervous-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 0 — debug/: the nervous system
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-1-matlib-dtype-agnostic-math-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 1 — matlib/: dtype-agnostic math kernels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-2-structs-the-array" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 2 — structs/: the Array
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Level 2 — structs/: the Array">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structsdtypespy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/dtypes.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structsarrayprotocolpy-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/array/protocol.py — the contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structsarraymixinspy-the-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/array/mixins.py — the composition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-four-behavioral-mixins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four behavioral mixins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structsarrayindexingpy-and-statspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        structs/array/indexing.py and stats.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-3-basic-layers-losses-optimizers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 3 — basic/: layers, losses, optimizers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Level 3 — basic/: layers, losses, optimizers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basiclayerspy-the-core-abstraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/layers.py — the core abstraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicactivationspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/activations.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basiccriterionspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/criterions.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicoptimizerspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/optimizers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicnnpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/nn.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basicinitializerspy-basictransformerspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic/initializers.py &amp; basic/transformers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#level-4-localdev-and-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level 4 — localdev/ and tests/
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suggested-reading-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suggested reading order
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="quick-start-dev">Quick start (dev)</h1>
+<p>This is a walkthrough through the SnakeML codebase, from the bottom layer up. Read it alongside the source — each section points at concrete files.</p>
+<h2 id="the-map">The map</h2>
+<div class="highlight"><pre><span></span><code>mllib/
+├── matlib/        pure math on nested lists (no class dispatch)   ← layer 1
+├── structs/       the Array container, composed from mixins      ← layer 2
+├── basic/         NN layers, losses, optimizers                  ← layer 3
+├── debug/         logging / validation / errors (cross-cutting)
+├── localdev/      scratch demo &amp; experiment scripts
+└── tests/         pytest + unittest
+</code></pre></div>
+<p>Dependencies flow one way: <code>basic</code> → <code>structs</code> → <code>matlib</code>, with <code>debug</code> used by all of them.</p>
+<hr />
+<h2 id="level-0-debug-the-nervous-system">Level 0 — <code>debug/</code>: the nervous system</h2>
+<p>Small, mostly-independent modules you should read first because <em>everything</em> imports them:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it gives</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>debug/config.py</code></td>
+<td>Module-level config dict: <code>configure(**overrides)</code>, <code>set_level(...)</code>, <code>is_enabled(...)</code>, env-var config</td>
+</tr>
+<tr>
+<td><code>debug/logger.py</code></td>
+<td>Custom <code>Logger</code> with <code>debug/info/warning/error/critical</code>; <code>get_logger(name)</code>; <code>bind(**ctx)</code> for preset context</td>
+</tr>
+<tr>
+<td><code>debug/context.py</code></td>
+<td><code>operation_context(name, **meta)</code> — a context manager that installs ambient metadata ("what op am I in")</td>
+</tr>
+<tr>
+<td><code>debug/errors.py</code></td>
+<td><code>LibraryError(root) → ValidationError → ShapeError / TypeMismatchError</code>, <code>OperationError(context, details)</code></td>
+</tr>
+<tr>
+<td><code>debug/validator.py</code></td>
+<td><code>ensure_type(...)</code>, <code>ensure_shape(...)</code> — raise the exceptions above</td>
+</tr>
+<tr>
+<td><code>debug/formatter.py</code></td>
+<td><code>[snakeML]</code>-prefix formatting, <code>describe(value)</code> — one-line human-readable object dump</td>
+</tr>
+<tr>
+<td><code>debug/diagnostics.py</code></td>
+<td>JSON-ish runtime snapshots for log lines</td>
+</tr>
+</tbody>
+</table>
+<p>The pattern used everywhere in <code>basic/</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">debug.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">operation_context</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">debug.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">OperationError</span>
+
+<span class="k">with</span> <span class="n">operation_context</span><span class="p">(</span><span class="s2">&quot;linear.forward&quot;</span><span class="p">,</span> <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;Linear&quot;</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="o">...</span>           <span class="c1"># risky math</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">OperationError</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">current_context</span><span class="p">(),</span> <span class="n">details</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+</code></pre></div>
+<p>So when something fails deep in the network, the error carries the <em>ambience</em> of where it happened.</p>
+<hr />
+<h2 id="level-1-matlib-dtype-agnostic-math-kernels">Level 1 — <code>matlib/</code>: dtype-agnostic math kernels</h2>
+<p><code>matlib</code> functions take and return <strong>plain nested lists</strong> (or <code>Array</code>s — they unwrap duck-typed data). There is no dispatch class here; it's the functional core.</p>
+<ul>
+<li><code>matlib/broadcasting.py</code> — the heart: <code>broadcast(a, b)</code> implements NumPy broadcast semantics (with an extra lenient 1-D-vs-2-D alignment), and <code>elementwise(a, b, op)</code> combines broadcasting with arbitrary binary callables. <strong>Every <code>a + b</code>, <code>a * b</code>, comparison etc. on <code>Array</code> funnels through here.</strong></li>
+<li><code>matlib/linalg.py</code> — <code>transpose</code>, <code>matmul</code> (batched over leading axes), <code>matvec</code>, <code>outer</code>, <code>tensordot</code> (general axis-contraction — used by <code>Conv2D</code>), <code>inverse</code> (Gauss-Jordan), <code>solve</code>, <code>det</code>, <code>cross</code>, <code>cholesky</code>, <code>permute</code>.</li>
+<li><code>matlib/ops.py</code> — unary elementwise kernels: <code>exp, log, sqrt, tanh, clip, ...</code> via the recursive <code>_apply_unary</code>.</li>
+<li><code>matlib/stats.py</code> — two tiers: global reductions over flat iterables (<code>sum</code>, <code>mean</code>, <code>variance</code>, ...) and axis-aware versions (<code>sum_axis(arr, axis, keepdims)</code>).</li>
+<li><code>matlib/manipulation.py</code> — <code>concatenate</code>, <code>stack</code>, <code>split</code>, <code>unbind</code>, <code>flip</code>.</li>
+<li><code>matlib/rng.py</code> — the entire randomness source: <code>normal(mean, std)</code> via Box–Muller on <code>random.random()</code>.</li>
+<li><code>matlib/operators.py</code>, <code>matlib/reductions.py</code> — reserved placeholder namespaces.</li>
+<li><code>matlib/__init__.py</code> — re-exports ~42 names (intentionally shadowing builtins <code>abs/sum/min/max</code>).</li>
+</ul>
+<p>Run the tests as you read; they're the executable spec of all this.</p>
+<hr />
+<h2 id="level-2-structs-the-array">Level 2 — <code>structs/</code>: the Array</h2>
+<h3 id="structsdtypespy"><code>structs/dtypes.py</code></h3>
+<p>Not a dtype system — it's the shared <strong>type-alias vocabulary</strong> used by every signature: <code>Scalar</code>, <code>NestedList</code>, <code>ArrayLike</code>, <code>IndexKey</code>, <code>Shape</code>, <code>Strides</code>, plus a TypeVar-based 3.9-compatible <code>Self</code> fallback (<code>ArrayT</code>/<code>ReturnSelf</code>).</p>
+<h3 id="structsarrayprotocolpy-the-contract"><code>structs/array/protocol.py</code> — the contract</h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ArrayProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">NestedList</span><span class="p">;</span> <span class="n">shape</span><span class="p">:</span> <span class="n">Shape</span><span class="p">;</span> <span class="n">strides</span><span class="p">:</span> <span class="n">Strides</span><span class="p">;</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">;</span> <span class="n">ndim</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p>This is the key design pattern: each behavioral mixin subclasses <code>ArrayProtocol</code>, so mypy type-checks each mixin independently against the shared contract, and <code>Array</code> satisfies it simply by inheriting the mixin composition.</p>
+<h3 id="structsarraymixinspy-the-composition"><code>structs/array/mixins.py</code> — the composition</h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ArrayMixins</span><span class="p">(</span><span class="n">ArrayConstructors</span><span class="p">,</span> <span class="n">ArrayUtilsOps</span><span class="p">,</span> <span class="n">ArrayShapeOps</span><span class="p">,</span> <span class="n">ArrayMathOps</span><span class="p">,</span> <span class="n">ArrayStatsOps</span><span class="p">):</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<p><code>ArrayArray</code> (sic: <code>Array</code> in <code>structs/array/array.py</code>) is <code>class Array(ArrayMixins)</code> — a <em>pure shell</em>. Attributes are computed eagerly at construction (<code>_to_list</code> + <code>_get_shape</code> + <code>_strides</code>) and recomputed after every in-place mutation; there are no views yet (<code>offset</code> is reserved for that).</p>
+<h3 id="the-four-behavioral-mixins">The four behavioral mixins</h3>
+<table>
+<thead>
+<tr>
+<th>Mixin</th>
+<th>File</th>
+<th>Highlights</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Constructors</td>
+<td><code>constructors.py</code></td>
+<td><code>zeros/ones/eye/full/arange/linspace/randn/tile/...</code> — classmethod factories filling per-element over a shape grid</td>
+</tr>
+<tr>
+<td>Utils</td>
+<td><code>utils.py</code> (~875 lines, the big one)</td>
+<td>internal shape machinery (<code>_to_list</code>, <code>_get_shape</code>, <code>_strides</code>, <code>_wrap_result</code> via <code>type(self)</code>), plus <code>flatten/tolist/item</code>, <code>concatenate/stack/split/unbind</code>, <code>where/take/put/gather/scatter/masked_fill/astype</code>, <code>unique/sort/argsort/searchsorted/shuffle/choice</code></td>
+</tr>
+<tr>
+<td>Math</td>
+<td><code>ops.py</code> (~910 lines)</td>
+<td>full dunder surface (<code>+ - * / // % ** &amp; \| ^ abs</code> + <code>r*</code>'s + <code>i*</code>'s), all routed through <code>_elementwise(...)</code> → <code>matlib.broadcasting.elementwise</code>; linalg delegation (<code>dot</code> via <code>tensordot</code>, <code>matmul</code>, <code>outer</code>, <code>inverse</code>, ...); unary delegation to <code>matlib.ops</code></td>
+</tr>
+<tr>
+<td>Shape</td>
+<td><code>shape.py</code></td>
+<td><code>reshape</code> (single <code>-1</code> inference), <code>squeeze/unsqueeze</code>, <code>swapaxes/moveaxis/permute/transpose</code>, <code>T</code>, <code>broadcast_to</code>, <code>roll</code>, <code>pad</code> (2-D)</td>
+</tr>
+<tr>
+<td>Stats</td>
+<td><code>stats.py</code></td>
+<td><code>sum/mean/var/std/max/min/prod/argmax/argmin/norm</code> all with <code>(axis=None, keepdims=False)</code></td>
+</tr>
+</tbody>
+</table>
+<p>In-place ops go through <code>_update_self(result)</code>, which rebinds <code>data/shape/ndim</code>.</p>
+<h3 id="structsarrayindexingpy-and-statspy"><code>structs/array/indexing.py</code> and <code>stats.py</code></h3>
+<ul>
+<li><code>indexing.py</code> — the NumPy-style indexing engine: <code>_normalize_key</code> validates <code>int / slice / bool list / Array / ...</code>, expands Ellipsis, pads missing trailing keys as full slices; <code>_getitem</code> / <code>_setitem</code> run over it. Slicing is garaunteed by tests like <code>arr[:, 1]</code>.</li>
+<li><code>stats.py</code> — thin <code>(axis, keepdims)</code> adapters calling <code>matlib.stats.*_axis</code>.</li>
+</ul>
+<p>Key things to know before hacking on the Array:</p>
+<ol>
+<li>Everything rebuilds via <code>type(self)</code> — subclassing keeps fluent returns.</li>
+<li><code>dtype</code> is an inferred <em>string label</em> on demand (<code>astype</code> casts to native Python types); there is no native-typed backing store.</li>
+<li>MRO gotcha: <code>ArrayConstructors.repeat</code>/<code>tile</code> (classmethods) shadow same-named instance methods in <code>ArrayShapeOps</code> — those instances are currently dead code.</li>
+</ol>
+<hr />
+<h2 id="level-3-basic-layers-losses-optimizers">Level 3 — <code>basic/</code>: layers, losses, optimizers</h2>
+<h3 id="basiclayerspy-the-core-abstraction"><code>basic/layers.py</code> — the core abstraction</h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Layer</span><span class="p">:</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>      <span class="c1"># e.g. {&quot;w&quot;: Array, &quot;b&quot;: Array}</span>
+    <span class="n">grads</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>       <span class="c1"># filled by backward, same keys</span>
+    <span class="n">submodules</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Layer</span><span class="p">]</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">Any</span>                  <span class="c1"># cached for backward</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">):</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_grad</span><span class="p">):</span> <span class="o">...</span>     <span class="c1"># returns d(input)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="o">...</span>                <span class="c1"># recursive, dotted keys</span>
+</code></pre></div>
+<p><code>Linear(input_dim, output_dim, initializer=None)</code>:
+- forward: <code>w.matmul(input) + b</code> under <code>operation_context("linear.forward")</code>
+- backward: <code>grads["w"] = grad.outer(self.input)</code>, <code>grads["b"] = grad</code>, returns <code>w.T.matmul(grad)</code></p>
+<p><code>Conv2D(input_dim, output_dim, kernel, stride)</code> uses <code>basic/utils.im2col</code> (patch extraction via <code>input[:, y:y+KH, x:x+KW]</code> slice tricks) + <code>tensordot</code> over the last three axes. (<code>MaxPool2D</code> is a placeholder.)</p>
+<h3 id="basicactivationspy"><code>basic/activations.py</code></h3>
+<p>All subclasses of <code>Activation(Layer)</code>: <code>ReLU</code>, <code>Sigmoid</code>, <code>Tanh</code>, <code>GELU</code> (tanh approx + hand-derived backward), <code>Softmax</code> (max-subtracted for stability; supports 1-D and row-wise 2-D; compact Jacobian backward <code>p*(g - (p*g).sum())</code>), <code>LinearActivation</code> (identity). Convention: forward coerces non-<code>Array</code> inputs and caches <code>self.input</code>/<code>self.output</code> for the derivative.</p>
+<h3 id="basiccriterionspy"><code>basic/criterions.py</code></h3>
+<ul>
+<li><code>MSE</code>: forward <code>0.5*(y_pred-y_true)**2</code> (elementwise), backward <code>(y_pred - y_true)</code> — the 0.5 cancels the d²/dx².</li>
+<li><code>CrossEntropy</code>: assumes pred is <strong>already softmax probabilities</strong> and targets are one-hot; backward <code>(y_pred - y_true)/N</code>. Heavily instrumented: <code>operation_context</code>, <code>ensure_type</code>, failures become <code>OperationError</code>.</li>
+</ul>
+<h3 id="basicoptimizerspy"><code>basic/optimizers.py</code></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Optimizer</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div>
+<p>Pass <code>model.layers</code>. <code>step()</code> walks <code>(dotted_path, params_dict, key, grad)</code> via <code>_recursive_items</code> — so a nested <code>params["w"]["Q"]</code> (as used by <code>Attention</code>) falls out for free — and mutates each leaf in place. <code>SGD</code> is <code>params -= lr * grad</code>; <code>Adam</code> adds bias-corrected moments. <code>zero_grad()</code> sets <code>layer.grads = {}</code>.</p>
+<h3 id="basicnnpy"><code>basic/nn.py</code></h3>
+<ul>
+<li><code>LayerList(list)</code> registers each layer as <code>submodules["&lt;index&gt;"]</code>.</li>
+<li><code>Sequential</code> chains <code>forward</code> left-to-right and <code>backward</code> <strong>right-to-left</strong> — that ordering is the whole backprop mechanism; autograd-style magic isn't needed because each layer's <code>backward</code> is hand-derived.</li>
+</ul>
+<h3 id="basicinitializerspy-basictransformerspy"><code>basic/initializers.py</code> &amp; <code>basic/transformers.py</code></h3>
+<p>Initializers are functors (<code>__call__</code>): <code>Zeros/Ones/Normal/Uniform/Constant/Xavier*/Kaiming*</code>, used by <code>Linear</code> (default <code>XavierNormal</code>); <code>Constant(value, shape)</code> takes the value first. <code>transformers.py</code> has experimental building blocks: <code>Embedding</code> (sparse row-gradient accumulation into <code>grads["w"]</code>), <code>LayerNorm</code>, <code>Residual</code>, single-head <code>Attention</code> (hand-derived backward, nested parameter dict).</p>
+<hr />
+<h2 id="level-4-localdev-and-tests">Level 4 — <code>localdev/</code> and <code>tests/</code></h2>
+<p><code>localdev/</code> scripts aren't part of the installed package; each demos one corner:</p>
+<ul>
+<li><code>nn_test.py</code> — <strong>the canonical end-to-end training loop</strong> (the exact loop from <a href="../quickstart/">Quick start</a>): <code>Sequential([Linear(3,2), ReLU(), Linear(2,1)])</code> + <code>SGD(model.layers, 0.01)</code> + 1000 iterations.</li>
+<li><code>cnn.py</code> — <code>Conv2D</code> forward/backward + one <code>SGD</code> step on a fixed 4×4 input.</li>
+<li><code>test_trans.py</code> — <code>Embedding</code> with a hand-built table, a fixed gradient, one optimizer step; inspect <code>e.grads</code>.</li>
+<li><code>main.py</code>, <code>temp.py</code> — a single-neuron mini-demo, and an Array featurure tour.</li>
+</ul>
+<p><code>tests/</code> runs with pytest (files use both <code>unittest</code> classes and pytest style) from the repo root:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-v<span class="w">        </span><span class="c1"># or: .venv/bin/python -m pytest tests/</span>
+.venv/bin/python<span class="w"> </span>-m<span class="w"> </span>mypy<span class="w">          </span><span class="c1"># type checks structs, matlib, debug (per pyproject.toml)</span>
+</code></pre></div>
+<p>Coverage: <code>test_array.py</code> (indexing, stats, linalg, embedding-optimizer interaction, error cases), <code>test_debug.py</code> (logger, contexts, config gating, validators), <code>test_initializers.py</code> (exact fills + shapes).</p>
+<hr />
+<h2 id="suggested-reading-order">Suggested reading order</h2>
+<ol>
+<li><code>debug/errors.py</code> + <code>debug/context.py</code> — 100 lines, the exception/context idiom.</li>
+<li><code>matlib/broadcasting.py</code> — how elementwise math actually works.</li>
+<li><code>structs/array/array.py</code> + <code>protocol.py</code> + <code>mixins.py</code> — the container.</li>
+<li>Pick one mixin (<code>ops.py</code> is the most instructive) and the tests of it.</li>
+<li><code>basic/layers.py</code>, then <code>activations.py</code>, <code>criterions.py</code>, <code>optimizers.py</code>, <code>nn.py</code>.</li>
+<li>Run <code>localdev/nn_test.py</code>; add a step counter and print <code>layer.grads</code> each iteration — that's the backprop mechanism laid bare.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

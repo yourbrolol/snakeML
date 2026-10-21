@@ -1,13 +1,47 @@
-class LibraryError(Exception):
-    """Base exception for snakeML-specific failures."""
+"""Exception hierarchy for snakeML.
 
-    def __init__(self, message, *, context=None, details=None):
+All library failures derive from :class:`LibraryError` so callers can
+catch a single base class. Validation failures specialize into
+:class:`ValidationError` (with :class:`ShapeError` and
+:class:`TypeMismatchError` subclasses), while operational failures raise
+:class:`OperationError`.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, Optional
+
+__all__ = [
+    "LibraryError",
+    "OperationError",
+    "ShapeError",
+    "TypeMismatchError",
+    "ValidationError",
+]
+
+
+class LibraryError(Exception):
+    """Base exception for snakeML-specific failures.
+
+    Attributes:
+        message: Human-readable description of the failure.
+        context: Optional key/value metadata attached to the failure.
+        details: Optional opaque payload with extra debugging info.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+        details: Optional[Any] = None,
+    ) -> None:
         self.message = message
         self.context = context or {}
         self.details = details
         super().__init__(message)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.message
 
 
