@@ -5,12 +5,22 @@ from __future__ import annotations
 import copy
 import random
 from bisect import bisect_left, bisect_right
-from typing import Any, Iterator, List, Optional, Sequence, Union, cast
+from typing import Any, Iterator, List, Optional, Sequence, Type, Union, cast
 
 from debug import get_logger
 from matlib import manipulation
 from structs import utils as struct_utils
-from structs.dtypes import Axis, DTypeName, IndexList, NestedList, SearchSide, Self, Shape
+from structs.dtypes import (
+    Axis,
+    DTypeName,
+    IndexList,
+    NestedList,
+    Scalar,
+    SearchSide,
+    Self,
+    Shape,
+)
+from .buffer import Buffer
 
 from .protocol import ArrayProtocol
 
@@ -53,6 +63,51 @@ class ArrayUtilsOps(ArrayProtocol):
         ):
             return [self._to_list(v) for v in values]
         return values
+
+    def _to_buffer(self, values: Any) -> Buffer:
+        """Convert an Array-like input into a flat Buffer.
+
+        Args:
+            values: An ``Array`` (its data is reused or flattened), a
+                ``Buffer`` (returned as-is), a nested ``list``/``tuple``
+                (flattened recursively in C order), a ``range`` (expanded
+                directly), any other non-string iterable (e.g. a generator),
+                or a bare scalar (wrapped into a 1-element buffer).
+
+        Returns:
+            Buffer: Flat row-major storage holding every leaf. Shape
+            validation is left to ``_get_shape``; this only guarantees a
+            flat scalar list.
+
+        Raises:
+            TypeError: If ``values`` is ``str``/``bytes``, or is not
+                convertible to a scalar buffer.
+        """
+        if isinstance(values, (str, bytes, bytearray)):
+            raise TypeError(f"cannot create Array from {type(values).__name__}")
+        if isinstance(values, self.__class__):
+            return (
+                values.data
+                if isinstance(values.data, Buffer)
+                else self._to_buffer(values.data)
+            )
+        if isinstance(values, Buffer):
+            return values
+        if isinstance(values, (list, tuple)):
+            out: List[Scalar] = []
+            for v in values:
+                out.extend(self._to_buffer(v).buffer)
+            return Buffer(out)
+        if isinstance(values, range):
+            return Buffer(list(values))
+        if hasattr(values, "__iter__") and not isinstance(values, dict):
+            out = []
+            for v in values:
+                out.extend(self._to_buffer(v).buffer)
+            return Buffer(out)
+        if isinstance(values, Scalar):
+            return Buffer([values])
+        raise TypeError(f"cannot create Array from {type(values).__name__}")
 
     def _get_shape(self, data: Any) -> Shape:
         """Recursively calculate the dimensions (shape) of nested list data.
@@ -874,3 +929,4 @@ class ArrayUtilsOps(ArrayProtocol):
 
 
 __all__ = ["ArrayUtilsOps"]
+

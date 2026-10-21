@@ -8,6 +8,7 @@ from typing import Any, List, Optional, Union, cast
 from debug import get_logger
 from matlib import linalg
 from structs.dtypes import IndexKey, NestedList, Shape, Strides
+from .buffer import Buffer
 
 from . import indexing
 from .mixins import ArrayMixins
@@ -40,7 +41,7 @@ class Array(ArrayMixins):
         ((2, 3), 2, (3, 1))
     """
 
-    data: NestedList
+    data: Buffer | NestedList
     shape: Shape
     strides: Strides
     offset: int
@@ -177,3 +178,4 @@ if __name__ == "__main__":
     a = Array([[1, 2], [3, 4]])
     b = Array([[5, 6], [7, 8]])
     logger.info("example matmul", result=linalg.matmul(a, b))
+
