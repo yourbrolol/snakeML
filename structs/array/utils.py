@@ -109,6 +109,38 @@ class ArrayUtilsOps(ArrayProtocol):
             return Buffer([values])
         raise TypeError(f"cannot create Array from {type(values).__name__}")
 
+    def _buffer_from(self, values: Any) -> tuple[Buffer, Shape]:
+        """Convert an Array-like input into a flat ``Buffer`` and its ``Shape``.
+
+        Returns a ``(buffer, shape)`` pair that ``Array.__init__`` can use
+        in its non‑raw path.  The implementation re‑uses the existing
+        ``_to_buffer`` / ``_get_shape`` helpers so the contract is already
+        tested.
+
+        Args:
+            values: see ``_buffer_from`` docstring for full list.
+
+        Returns:
+            tuple[Buffer, Shape]: ``(buffer, shape)`` pair.
+
+        Raises:
+            TypeError: for unsupported input types.
+        """
+        if isinstance(values, (str, bytes, bytearray)):
+            raise TypeError(f"cannot create Array from {type(values).__name__}")
+        # Reuse the two existing helpers; they are individually tested
+        # and already handle all the edge cases (empty lists, 0‑d, range, etc.).
+        buffer = self._to_buffer(values)
+        shape = self._get_shape(values) if not isinstance(values, Buffer) else (
+            (0,) if len(values) == 0 else (len(values),)
+        )
+        # When values is already a Buffer, _get_shape doesn't apply – infer shape
+        # from the buffer length (1‑D) or empty‑buffer convention.
+        if isinstance(values, self.__class__) and isinstance(values.data, Buffer):
+            # Array already has Buffer data – return its stored shape.
+            return values.data, values.shape
+        return buffer, shape
+
     def _get_shape(self, data: Any) -> Shape:
         """Recursively calculate the dimensions (shape) of nested list data.
 
