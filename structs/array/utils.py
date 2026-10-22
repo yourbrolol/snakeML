@@ -67,55 +67,16 @@ class ArrayUtilsOps(ArrayProtocol):
     def _to_buffer(self, values: Any) -> Buffer:
         """Convert an Array-like input into a flat Buffer.
 
-        Args:
-            values: An ``Array`` (its data is reused or flattened), a
-                ``Buffer`` (returned as-is), a nested ``list``/``tuple``
-                (flattened recursively in C order), a ``range`` (expanded
-                directly), any other non-string iterable (e.g. a generator),
-                or a bare scalar (wrapped into a 1-element buffer).
-
-        Returns:
-            Buffer: Flat row-major storage holding every leaf. Shape
-            validation is left to ``_get_shape``; this only guarantees a
-            flat scalar list.
-
-        Raises:
-            TypeError: If ``values`` is ``str``/``bytes``, or is not
-                convertible to a scalar buffer.
+        Delegates to :func:`~structs.array.buffer_helpers._to_buffer`.
         """
-        if isinstance(values, (str, bytes, bytearray)):
-            raise TypeError(f"cannot create Array from {type(values).__name__}")
-        if isinstance(values, self.__class__):
-            return (
-                values.data
-                if isinstance(values.data, Buffer)
-                else self._to_buffer(values.data)
-            )
-        if isinstance(values, Buffer):
-            return values
-        if isinstance(values, (list, tuple)):
-            out: List[Scalar] = []
-            for v in values:
-                out.extend(self._to_buffer(v).buffer)
-            return Buffer(out)
-        if isinstance(values, range):
-            return Buffer(list(values))
-        if hasattr(values, "__iter__") and not isinstance(values, dict):
-            out = []
-            for v in values:
-                out.extend(self._to_buffer(v).buffer)
-            return Buffer(out)
-        if isinstance(values, Scalar):
-            return Buffer([values])
-        raise TypeError(f"cannot create Array from {type(values).__name__}")
+        from .buffer_helpers import _to_buffer as _tb
+        return _tb(values)
 
     def _buffer_from(self, values: Any) -> tuple[Buffer, Shape]:
         """Convert an Array-like input into a flat ``Buffer`` and its ``Shape``.
 
         Returns a ``(buffer, shape)`` pair that ``Array.__init__`` can use
-        in its non‑raw path.  The implementation re‑uses the existing
-        ``_to_buffer`` / ``_get_shape`` helpers so the contract is already
-        tested.
+        in its non‑raw path.  Delegates to :func:`~structs.array.buffer_helpers._buffer_from`.
 
         Args:
             values: see ``_buffer_from`` docstring for full list.
@@ -126,41 +87,16 @@ class ArrayUtilsOps(ArrayProtocol):
         Raises:
             TypeError: for unsupported input types.
         """
-        if isinstance(values, (str, bytes, bytearray)):
-            raise TypeError(f"cannot create Array from {type(values).__name__}")
-        # Reuse the two existing helpers; they are individually tested
-        # and already handle all the edge cases (empty lists, 0‑d, range, etc.).
-        buffer = self._to_buffer(values)
-        shape = self._get_shape(values) if not isinstance(values, Buffer) else (
-            (0,) if len(values) == 0 else (len(values),)
-        )
-        # When values is already a Buffer, _get_shape doesn't apply – infer shape
-        # from the buffer length (1‑D) or empty‑buffer convention.
-        if isinstance(values, self.__class__) and isinstance(values.data, Buffer):
-            # Array already has Buffer data – return its stored shape.
-            return values.data, values.shape
-        return buffer, shape
+        from .buffer_helpers import _buffer_from as _bf
+        return _bf(values)
 
     def _get_shape(self, data: Any) -> Shape:
         """Recursively calculate the dimensions (shape) of nested list data.
 
-        Args:
-            data: Nested lists, or a scalar for a 0-d result.
-
-        Returns:
-            Shape: One ``int`` per dimension. A non-list yields ``()`` and an
-            empty list yields ``(0,)``. Ragged nesting raises no error: only
-            the first element of each level is inspected.
-
-        Example:
-            >>> Array([[1, 2, 3]])._get_shape([[1, 2, 3]])
-            (1, 3)
+        Delegates to :func:`~structs.array.buffer_helpers._get_shape`.
         """
-        if not isinstance(data, list):
-            return ()
-        if not data:
-            return (0,)
-        return (len(data),) + self._get_shape(data[0])
+        from .buffer_helpers import _get_shape as _gs
+        return _gs(data)
 
     def _strides(self, shape: Shape) -> tuple[int, ...]:
         """Compute C-contiguous strides for a resolved shape.
@@ -936,28 +872,10 @@ class ArrayUtilsOps(ArrayProtocol):
     def _restore_from_flat(self, flat: Sequence[Any], shape: Shape) -> NestedList:
         """Rebuild nested lists from a flat sequence and a target shape.
 
-        Args:
-            flat: Elements in C order.
-            shape: Fully resolved shape to rebuild.
-
-        Returns:
-            NestedList: Nested lists matching ``shape``; a bare scalar for an
-            empty shape.
-
-        Example:
-            >>> Array([1, 2, 3, 4])._restore_from_flat([1, 2, 3, 4], (2, 2))
-            [[1, 2], [3, 4]]
+        Delegates to :func:`~structs.array.buffer_helpers._restore_from_flat`.
         """
-        if not shape:
-            return flat[0]
-        size = shape[0]
-        if len(shape) == 1:
-            return list(flat[:size])
-        chunk = len(flat) // size
-        return [
-            self._restore_from_flat(flat[i * chunk : (i + 1) * chunk], shape[1:])
-            for i in range(size)
-        ]
+        from .buffer_helpers import _restore_from_flat as _rff
+        return _rff(flat, shape)
 
 
 __all__ = ["ArrayUtilsOps"]
