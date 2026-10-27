@@ -204,9 +204,7 @@ def _normalize_key(ndim: int, _key: IndexKey) -> NormalizedKey:
                 f"but {len(key) - 1} were indexed"
             )
         cleaned: List[IndexElement] = (
-            list(key[:position])
-            + [slice(None)] * pad_count
-            + list(key[position + 1 :])
+            list(key[:position]) + [slice(None)] * pad_count + list(key[position + 1 :])
         )
     else:
         if len(key) > ndim:
@@ -359,32 +357,6 @@ def _getitem(
     if not key:
         return target
 
-    head, tail = key[0], key[1:]
-
-    if isinstance(head, bool):
-        logger.error("unsupported scalar boolean index")
-        raise TypeMismatchError("Boolean scalar indices are not supported")
-
-    if _is_int_index(head):
-        if not isinstance(target, list):
-            raise IndexError("too many indices for array")
-        index = _normalize_int(cast(int, head), len(target))
-        child = target[index]
-        if not tail:
-            return child
-        return _getitem(array, tuple(tail), child, depth + 1)
-
-    if not isinstance(target, list):
-        raise IndexError("too many indices for array")
-
-    indices = _indices_for(head, len(target))
-    selected = [target[index] for index in indices]
-
-    if not tail:
-        return selected
-
-    return [_getitem(array, tuple(tail), item, depth + 1) for item in selected]
-
 
 def _assign_list(target: List[Any], key: NormalizedKey, value: Any) -> None:
     """Assign ``value`` into a nested list using a normalized remaining key."""
@@ -525,5 +497,3 @@ def _setitem(
 
     if not isinstance(target, list):
         raise IndexError("too many indices for array")
-
-    _assign_list(target, key, value)

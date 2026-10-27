@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any, List, Optional, Union, cast
+from typing import Any, List, Optional, Type, Union, cast
 
 from debug import get_logger
 from matlib import linalg
@@ -41,7 +41,7 @@ class Array(ArrayMixins):
         ((2, 3), 2, (3, 1))
     """
 
-    data: Buffer | NestedList
+    data: Buffer
     shape: Shape
     strides: Strides
     offset: int
@@ -76,14 +76,15 @@ class Array(ArrayMixins):
             TypeError: If ``values`` is not iterable or is a ``str``/``bytes``.
         """
         if raw:
+            if not isinstance(values, Buffer):
+                raise TypeError("raw=True requires a Buffer")
             self.data = values
             self.shape = tuple(shape) if shape is not None else self._get_shape(values)
             self.strides = (
                 tuple(strides) if strides is not None else self._strides(self.shape)
             )
         else:
-            self.data = self._to_list(values)
-            self.shape = self._get_shape(self.data)
+            self.data, self.shape = self._buffer_from(values)
             self.strides = self._strides(self.shape)
         self.offset = offset
         self.ndim = len(self.shape)
@@ -98,7 +99,7 @@ class Array(ArrayMixins):
             TypeError: If called on a 0-d array, whose ``data`` is a bare scalar
                 and therefore has no outer dimension.
         """
-        return len(cast("List[Any]", self.data))
+        return self.shape[0] if self.ndim > 0 else 0
 
     def __iter__(self) -> Iterator[Any]:
         """Iterate over the outermost dimension.
@@ -171,11 +172,10 @@ class Array(ArrayMixins):
         Returns:
             str: Nested bracket form of ``data``, e.g. ``"[[1, 2], [3, 4]]"``.
         """
-        return self._repr(self.data)
+        return self._repr(self.tolist())
 
 
 if __name__ == "__main__":
     a = Array([[1, 2], [3, 4]])
     b = Array([[5, 6], [7, 8]])
     logger.info("example matmul", result=linalg.matmul(a, b))
-

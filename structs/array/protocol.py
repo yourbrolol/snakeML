@@ -65,6 +65,12 @@ class ArrayProtocol(Protocol):
     def flatten(self) -> Self:
         """Return a flat 1-D copy of the array."""
 
+    def item(self, idx: Optional[int] = None) -> Any:
+        """Return a single flat element, or the sole element when ``idx`` is None."""
+
+    def _restore_from_flat(self, flat: Sequence[Any], shape: Shape) -> NestedList:
+        """Rebuild nested lists from a flat sequence and a target shape."""
+
     # -- indexing ----------------------------------------------------------- #
 
     def __getitem__(self, key: IndexKey) -> Any:

@@ -19,9 +19,11 @@ def _to_buffer(values: Any) -> Buffer:
 
     Standalone version of ``ArrayUtilsOps._to_buffer``.
     """
+    from .utils import ArrayUtilsOps as _Ops
+
     if isinstance(values, (str, bytes, bytearray)):
         raise TypeError(f"cannot create Array from {type(values).__name__}")
-    if isinstance(values, Self):
+    if isinstance(values, _Ops):
         if isinstance(values.data, Buffer):
             return values.data
         return _to_buffer(values.data)
@@ -78,9 +80,11 @@ def _buffer_from(values: Any) -> Tuple[Buffer, Shape]:
 
     Standalone version of ``ArrayUtilsOps._buffer_from``.
     """
+    from .utils import ArrayUtilsOps as _Ops
+
     if isinstance(values, (str, bytes, bytearray)):
         raise TypeError(f"cannot create Array from {type(values).__name__}")
-    if isinstance(values, Self):
+    if isinstance(values, _Ops):
         if isinstance(values.data, Buffer):
             return values.data, values.shape
         # Array with nested-list data – fall through to the generic walk
@@ -91,7 +95,7 @@ def _buffer_from(values: Any) -> Tuple[Buffer, Shape]:
         return values, (len(values),)
     buffer = _to_buffer(values)
     shape = _get_shape(values) if not isinstance(values, Buffer) else ((0,) if len(values) == 0 else (len(values),))
-    if isinstance(values, Self) and isinstance(values.data, Buffer):
+    if isinstance(values, _Ops) and isinstance(values.data, Buffer):
         return values.data, values.shape
     return buffer, shape
 
