@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Union, cast
+from typing import Any, Optional, Sequence, Union
 
 from debug import get_logger
 from debug.errors import ShapeError
 from matlib import linalg, manipulation
-from structs.dtypes import AxisArg, NestedList, Self, ShapeArg
+from structs.dtypes import AxisArg, Self, ShapeArg
 
+from .buffer import Buffer
 from .protocol import ArrayProtocol
 
 logger = get_logger(__name__)
@@ -35,6 +36,32 @@ def _as_dims(args: Sequence[ShapeArg]) -> tuple[int, ...]:
     if len(args) == 1 and isinstance(args[0], (tuple, list)):
         args = args[0]
     return tuple(int(dim) for dim in args)  # type: ignore[call-overload,arg-type]
+
+
+def _shape_size(shape: tuple[int, ...]) -> int:
+    """Return the product of ``shape``, i.e. its element count."""
+    total = 1
+    for dim in shape:
+        total *= dim
+    return total
+
+
+def _coords_from_flat(index: int, shape: tuple[int, ...]) -> list[int]:
+    """Convert a C-order flat index into multi-dimensional coordinates."""
+    coords = [0] * len(shape)
+    remaining = index
+    for dim in range(len(shape) - 1, -1, -1):
+        coords[dim] = remaining % shape[dim]
+        remaining //= shape[dim]
+    return coords
+
+
+def _flat_from_coords(coords: Sequence[int], shape: tuple[int, ...]) -> int:
+    """Convert multi-dimensional coordinates into a C-order flat index."""
+    index = 0
+    for coord, dim in zip(coords, shape):
+        index = index * dim + coord
+    return index
 
 
 class ArrayShapeOps(ArrayProtocol):
@@ -66,9 +93,8 @@ class ArrayShapeOps(ArrayProtocol):
             [[1, 2], [3, 4], [5, 6]]
         """
         dims = _as_dims(shape)
-
-        flat = list(self.flatten())
-        total = len(flat)
+        values = list(self._flatten())
+        total = len(values)
 
         if dims.count(-1) > 1:
             logger.error(
@@ -78,40 +104,36 @@ class ArrayShapeOps(ArrayProtocol):
 
         if -1 in dims:
             known = 1
-            for s in dims:
-                if s != -1:
-                    known *= s
+            for dim in dims:
+                if dim != -1:
+                    known *= dim
+            if known == 0:
+                if total != 0:
+                    raise ShapeError(
+                        f"Cannot reshape array of size {total} into shape {dims}"
+                    )
+                inferred = 0
+            else:
+                if total % known != 0:
+                    logger.error("cannot infer reshape size", total=total, shape=dims)
+                    raise ShapeError(
+                        f"Cannot reshape array of size {total} into shape {dims}"
+                    )
+                inferred = total // known
+            dims = tuple(inferred if dim == -1 else dim for dim in dims)
 
-            if total % known != 0:
-                logger.error("cannot infer reshape size", total=total, shape=dims)
-                raise ShapeError(
-                    f"Cannot reshape array of size {total} into shape {dims}"
-                )
+        if any(dim < 0 for dim in dims):
+            logger.error("negative reshape dimension", shape=dims)
+            raise ShapeError("Dimensions must be non-negative.")
 
-            inferred = total // known
-            shape = tuple(inferred if s == -1 else s for s in dims)
-
-        expected = 1
-        for s in dims:
-            if s < 0:
-                logger.error("negative reshape dimension", shape=dims)
-                raise ShapeError("Dimensions must be non-negative.")
-            expected *= s
-
+        expected = _shape_size(dims)
         if expected != total:
             logger.error(
                 "reshape total mismatch", total=total, shape=dims, expected=expected
             )
             raise ShapeError(f"Cannot reshape array of size {total} into shape {dims}")
 
-        flat_iter = iter(flat)
-
-        def build(dim: int) -> Any:
-            if dim == len(dims):
-                return next(flat_iter)
-            return [build(dim + 1) for _ in range(dims[dim])]
-
-        return self.__class__(build(0))
+        return self._from_buffer(Buffer(values), dims)
 
     def flip(self, axis: int) -> Self:
         """Reverse the order of elements along one axis.
@@ -356,60 +378,35 @@ class ArrayShapeOps(ArrayProtocol):
             ShapeError: If the target rank is smaller than ``ndim`` or an axis
                 is neither equal nor ``1`` in the source.
         """
-        target_shape = tuple(shape)  # type: ignore[arg-type]
+        target_shape = tuple(int(dim) for dim in shape)  # type: ignore[arg-type]
         if len(target_shape) < self.ndim:
             raise ShapeError(f"Cannot broadcast shape {self.shape} to {target_shape}")
-        # Align source shape with target shape
+        if any(dim < 0 for dim in target_shape):
+            raise ShapeError("Broadcast dimensions must be non-negative")
+
         src_shape = (1,) * (len(target_shape) - self.ndim) + self.shape
-        # Validate broadcasting rules
-        for s, t in zip(src_shape, target_shape):
-            if s != t and s != 1:
+        for src_dim, dst_dim in zip(src_shape, target_shape):
+            if src_dim != dst_dim and src_dim != 1:
                 raise ShapeError(
                     f"Cannot broadcast shape {self.shape} to {target_shape}"
                 )
 
-        def _broadcast(
-            data: Any, src_shape: tuple[int, ...], dst_shape: tuple[int, ...]
-        ) -> NestedList:
-            if not dst_shape:
-                return data
-            src_dim = src_shape[0]
-            dst_dim = dst_shape[0]
-            # Virtual leading dimension
-            if len(src_shape) > len(self.shape):
-                return [
-                    _broadcast(data, src_shape[1:], dst_shape[1:])
-                    for _ in range(dst_dim)
-                ]
-            # Scalar
-            if not isinstance(data, list):
-                return [
-                    _broadcast(data, src_shape[1:], dst_shape[1:])
-                    for _ in range(dst_dim)
-                ]
-            # Broadcast singleton dimension
-            if src_dim == 1:
-                elem = data[0] if data else 0
-                return [
-                    _broadcast(elem, src_shape[1:], dst_shape[1:])
-                    for _ in range(dst_dim)
-                ]
-            # Shapes are equal (validated already)
-            return [
-                _broadcast(data[i], src_shape[1:], dst_shape[1:])
-                for i in range(src_dim)
-            ]
-
-        return self.__class__(_broadcast(self.data, src_shape, target_shape))
+        source_values = list(self._flatten())
+        values = []
+        for index in range(_shape_size(target_shape)):
+            target_coords = _coords_from_flat(index, target_shape)
+            source_coords = []
+            for coord, src_dim in zip(target_coords, src_shape):
+                source_coords.append(0 if src_dim == 1 else coord)
+            values.append(
+                source_values[_flat_from_coords(source_coords[-self.ndim :], self.shape)]
+                if self.ndim
+                else source_values[0]
+            )
+        return self._from_buffer(Buffer(values), target_shape)
 
     def repeat(self, repeats: Union[int, Sequence[int]], axis: Optional[int] = None) -> Self:
         """Repeat elements along an axis.
-
-        .. warning::
-           ``ArrayConstructors.repeat(value, shape)`` shadows this method on
-           the composed ``Array`` class, so on an ``Array`` instance this
-           body is currently unreachable and ``arr.repeat(2)`` calls the
-           constructor factory instead. See the note on ``tile`` below.
 
         Args:
             repeats: How many times each element is repeated. Only the first
@@ -425,35 +422,35 @@ class ArrayShapeOps(ArrayProtocol):
             >>> Array([1, 2]).repeat(2)
             [1, 1, 2, 2]
         """
+        if self.ndim == 0:
+            return self._from_buffer(Buffer(list(self._flatten())), ())
         if axis is None:
             axis = 0
-        if isinstance(repeats, int):
-            repeats = (repeats,)
+        axis = axis % self.ndim
+        count = repeats if isinstance(repeats, int) else repeats[0]
+        if count < 0:
+            raise ShapeError("repeats must be non-negative")
 
-        def _repeat(data: Any, current_axis: int) -> NestedList:
-            if current_axis == axis:
-                if isinstance(data, list):
-                    return [item for item in data for _ in range(repeats[0])]
-                return data
-            if isinstance(data, list):
-                return [_repeat(item, current_axis + 1) for item in data]
-            return data
-
-        return self.__class__(_repeat(self.data, 0))
+        out_shape = list(self.shape)
+        out_shape[axis] *= count
+        out_shape_t = tuple(out_shape)
+        source_values = list(self._flatten())
+        values = []
+        for index in range(_shape_size(out_shape_t)):
+            out_coords = _coords_from_flat(index, out_shape_t)
+            src_coords = list(out_coords)
+            src_coords[axis] //= count
+            values.append(source_values[_flat_from_coords(src_coords, self.shape)])
+        return self._from_buffer(Buffer(values), out_shape_t)
 
     def tile(self, reps: ShapeArg) -> Self:
         """Repeat the whole array along each dimension.
 
-        .. warning::
-           ``ArrayConstructors.tile(value, reps)`` shadows this method on the
-           composed ``Array`` class (it comes first in the MRO), so this body
-           is currently unreachable on an ``Array`` instance. One of the two
-           pairs needs renaming.
-
         Args:
             reps: Number of copies per dimension, either an ``int`` or a
-                sequence. The result has ``shape[i] * reps[i]`` along axis ``i``;
-                dimensions beyond ``len(reps)`` are left alone.
+                sequence. The result has ``shape[i] * reps[i]`` along axis
+                ``i``. When ``reps`` is longer than the array rank, leading
+                dimensions of size one are added.
 
         Returns:
             Self: A new array made of repeated copies of ``self``.
@@ -464,17 +461,31 @@ class ArrayShapeOps(ArrayProtocol):
         """
         if isinstance(reps, int):
             reps = (reps,)
+        reps_t = tuple(int(rep) for rep in reps)
+        if any(rep < 0 for rep in reps_t):
+            raise ShapeError("tile repetitions must be non-negative")
 
-        def _tile(data: Any, current_dim: int) -> NestedList:
-            if current_dim >= len(reps):
-                return data
-            if isinstance(data, list):
-                repeat_count = reps[current_dim]  # type: ignore[index]
-                repeated = [item for item in data for _ in range(repeat_count)]
-                return [_tile(item, current_dim + 1) for item in repeated]
-            return data
+        out_ndim = max(self.ndim, len(reps_t))
+        src_shape = (1,) * (out_ndim - self.ndim) + self.shape
+        rep_shape = reps_t + (1,) * (out_ndim - len(reps_t))
+        out_shape = tuple(src_dim * rep for src_dim, rep in zip(src_shape, rep_shape))
 
-        return self.__class__(_tile(self.data, 0))
+        source_values = list(self._flatten())
+        values = []
+        for index in range(_shape_size(out_shape)):
+            out_coords = _coords_from_flat(index, out_shape)
+            src_coords = [
+                coord % src_dim if src_dim else 0
+                for coord, src_dim in zip(out_coords, src_shape)
+            ]
+            values.append(
+                source_values[
+                    _flat_from_coords(src_coords[-self.ndim :], self.shape)
+                ]
+                if self.ndim
+                else source_values[0]
+            )
+        return self._from_buffer(Buffer(values), out_shape)
 
     def roll(self, shift: int, axis: Optional[int] = None) -> Self:
         """Cyclically shift elements along an axis.
@@ -504,10 +515,11 @@ class ArrayShapeOps(ArrayProtocol):
                 f"Axis {axis} is out of bounds for array of dimension {self.ndim}."
             )
         if self.ndim == 1:
-            values = list(cast("List[Any]", self.data))
+            values = list(self._flatten())
             shift %= len(values)
-            return self.__class__(
-                values[-shift:] + values[:-shift] if shift else values
+            return self._from_buffer(
+                Buffer(values[-shift:] + values[:-shift] if shift else values),
+                self.shape,
             )
         raise NotImplementedError("roll is only implemented for 1D arrays")
 
@@ -540,16 +552,23 @@ class ArrayShapeOps(ArrayProtocol):
         if len(padding) != 2:
             raise ShapeError("padding must be an int or a pair")
         top_bottom, left_right = padding
-        new_rows = len(self.data) + top_bottom + top_bottom  # type: ignore[arg-type]
-        new_cols = len(self.data[0]) + left_right + left_right  # type: ignore[index,arg-type]
-        result: List[List[Any]] = []
-        for _ in range(top_bottom):
-            result.append([value] * new_cols)
-        for row in cast("List[Any]", self.data):
-            result.append([value] * left_right + list(row) + [value] * left_right)
-        for _ in range(top_bottom):
-            result.append([value] * new_cols)
-        return self.__class__(result)
+        rows, cols = self.shape
+        new_rows = rows + 2 * top_bottom
+        new_cols = cols + 2 * left_right
+        if new_rows < 0 or new_cols < 0:
+            raise ShapeError("negative padding removes more than the array size")
+
+        source_values = list(self._flatten())
+        values = []
+        for out_row in range(new_rows):
+            src_row = out_row - top_bottom
+            for out_col in range(new_cols):
+                src_col = out_col - left_right
+                if 0 <= src_row < rows and 0 <= src_col < cols:
+                    values.append(source_values[src_row * cols + src_col])
+                else:
+                    values.append(value)
+        return self._from_buffer(Buffer(values), (new_rows, new_cols))
 
 
 __all__ = ["ArrayShapeOps"]
