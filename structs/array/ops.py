@@ -56,12 +56,10 @@ class ArrayMathOps(ArrayProtocol):
                 in-place operator such as ``__iadd__``.
 
         Returns:
-            Self: ``self``, after ``data``/``shape``/``ndim`` have been refreshed.
-            Note that ``strides`` is not recomputed.
+            Self: ``self``, after its backing View has been refreshed.
         """
         self.data = result.data if hasattr(result, "data") else result
         self.shape = self._get_shape(self.data)
-        self.ndim = len(self.shape)
         return self
 
     # ----------------------------------------------------------------- #

@@ -88,7 +88,6 @@ class ArrayTransformOps(ArrayProtocol):
             return self
         self.data = self._fill_value(self.data, value)
         self.shape = self._get_shape(self.data)
-        self.ndim = len(self.shape)
         return self
 
     def where(self, condition: Any, x: Any, y: Any) -> Self:
