@@ -13,7 +13,6 @@ from typing import Any, Callable, Iterable, Optional, Tuple, Union
 
 from debug import get_logger
 from debug.errors import ValidationError
-from structs.utils import indices, set_nested, zeroes
 
 logger = get_logger(__name__)
 
@@ -222,6 +221,8 @@ def _reduce_axis(
     list
         A nested list (same nesting depth as input if keepdims, else ndim-1).
     """
+    from structs.utils import indices, set_nested, zeroes
+
     ndim = array.ndim
     shape = array.shape
     axis = axis % ndim

@@ -7,8 +7,8 @@ from typing import Any, Optional, Union
 
 from debug import get_logger
 from debug.errors import ShapeError
-from matlib import broadcasting, linalg
-from matlib import ops as matlib_ops
+from matlib._array import broadcasting, linalg
+from matlib._array import ops as matlib_ops
 from structs.dtypes import BinaryOp, Self
 
 from .protocol import ArrayProtocol
@@ -39,8 +39,14 @@ class ArrayMathOps(ArrayProtocol):
         Raises:
             ShapeError: If the two shapes cannot be broadcast together.
         """
-        other_data = self._unwrap(other)
-        return self.__class__(broadcasting.elementwise(self.data, other_data, op))
+        # Previously used broadcasting.elementwise(), now doesn't
+        return self.__class__(
+            values=[op(a, b) for a, b in zip(self.data.buffer, other.data.buffer)],
+            raw=True,
+            shape=self.shape,
+            strides=self.strides,
+            offset=self.offset,
+        )
 
     def _update_self(self, result: Any) -> Self:
         """Rebuild shape metadata after ``data`` was replaced by a new value.

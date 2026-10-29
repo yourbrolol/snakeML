@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, List, Sequence, Union
 
-from matlib import manipulation
+from matlib._array import manipulation
 from structs.dtypes import Self
 
 from ..buffer import Buffer

@@ -13,7 +13,6 @@ from typing import Any, List, Sequence, Tuple, Union
 
 from debug import get_logger
 from debug.errors import ShapeError, ValidationError
-from structs.utils import build_index, indices, set_nested, zeroes
 
 logger = get_logger(__name__)
 
@@ -220,6 +219,8 @@ def permute(array: Any, axes: Sequence[int]) -> Any:
     Raises:
         ShapeError: If ``axes`` is not a permutation of ``0..ndim-1``.
     """
+    from structs.utils import indices, set_nested, zeroes
+
     axes = list(axes)
     ndim = array.ndim
     shape = array.shape
@@ -264,6 +265,8 @@ def tensordot(
         ShapeError: If the two contraction-axis lists differ in length.
         ValidationError: If an integer ``axes`` argument is negative.
     """
+    from structs.utils import build_index, indices, set_nested, zeroes
+
     axes_a: List[int]
     axes_b: List[int]
     if isinstance(axes, int):

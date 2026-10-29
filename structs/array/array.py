@@ -6,7 +6,6 @@ from collections.abc import Iterator
 from typing import Any, List, Optional, Type, Union, cast
 
 from debug import get_logger
-from matlib import linalg
 from structs.dtypes import IndexKey, NestedList, Shape, Strides
 from .buffer import Buffer
 
@@ -178,4 +177,4 @@ class Array(ArrayMixins):
 if __name__ == "__main__":
     a = Array([[1, 2], [3, 4]])
     b = Array([[5, 6], [7, 8]])
-    logger.info("example matmul", result=linalg.matmul(a, b))
+    logger.info("example matmul", result=a.matmul(b))

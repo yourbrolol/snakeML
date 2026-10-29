@@ -6,7 +6,7 @@ from typing import Any, Optional, Sequence, Union
 
 from debug import get_logger
 from debug.errors import ShapeError
-from matlib import linalg, manipulation
+from matlib._array import linalg, manipulation
 from structs.dtypes import AxisArg, Self, ShapeArg
 
 from .buffer import Buffer
