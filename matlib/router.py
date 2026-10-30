@@ -79,6 +79,15 @@ def _select_module(values: Tuple[Any, ...], default: str) -> ModuleType:
         _load_extra_modules()
 
     matched = _matching_modules(values)
+    nested_values = tuple(
+        item
+        for value in values
+        if isinstance(value, (list, tuple))
+        for item in value
+    )
+    nested_matched = _matching_modules(nested_values) if nested_values else []
+    if len(nested_matched) == 1 and nested_matched != matched:
+        return nested_matched[0]
     if len(matched) > 1:
         names = ", ".join(module.__name__ for module in matched)
         raise TypeError(f"operands must share one implementation, got {names}")

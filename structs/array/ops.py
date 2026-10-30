@@ -39,14 +39,18 @@ class ArrayMathOps(ArrayProtocol):
         Raises:
             ShapeError: If the two shapes cannot be broadcast together.
         """
-        # Previously used broadcasting.elementwise(), now doesn't
-        return self.__class__(
-            values=[op(a, b) for a, b in zip(self.data.buffer, other.data.buffer)],
-            raw=True,
-            shape=self.shape,
-            strides=self.strides,
-            offset=self.offset,
-        )
+        result = broadcasting.elementwise(self, other, op)
+        if isinstance(result, self.__class__):
+            return result
+        if hasattr(result, "data") and hasattr(result, "shape"):
+            return self.__class__(
+                result.data,
+                raw=True,
+                shape=result.shape,
+                strides=getattr(result, "strides", None),
+                offset=getattr(result, "offset", 0),
+            )
+        return result
 
     def _update_self(self, result: Any) -> Self:
         """Rebuild shape metadata after ``data`` was replaced by a new value.
@@ -58,8 +62,14 @@ class ArrayMathOps(ArrayProtocol):
         Returns:
             Self: ``self``, after its backing View has been refreshed.
         """
-        self.data = result.data if hasattr(result, "data") else result
-        self.shape = self._get_shape(self.data)
+        if hasattr(result, "data") and hasattr(result, "shape"):
+            self.data = result.data
+            self.shape = tuple(result.shape)
+            self.strides = tuple(result.strides)
+            self.offset = result.offset
+        else:
+            self.data = result
+            self.shape = self._get_shape(result)
         return self
 
     # ----------------------------------------------------------------- #

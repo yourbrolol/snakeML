@@ -1,7 +1,8 @@
-"""Array implementations of the math kernels.
+"""Array-native implementations of the math kernels.
 
-This package currently delegates to :mod:`matlib._list` until the
-Buffer-native kernels are implemented.
+The kernels read the flat ``Buffer`` backing an :class:`Array` and return new
+``Array`` objects (scalars stay scalars), so no nested-list round trip is
+required.
 """
 
 supported = ["Array"]

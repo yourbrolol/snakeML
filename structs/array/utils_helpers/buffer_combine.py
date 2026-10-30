@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, List, Sequence, Union
 
+from debug.errors import ShapeError
 from matlib._array import manipulation
 from structs.dtypes import Self
 
@@ -93,12 +94,12 @@ class ArrayCombineOps(ArrayProtocol):
             return self._from_buffer(Buffer(values), (len(values),))
 
         if self.ndim != 2 or other_array.ndim != 2:
-            raise ValueError("hstack supports only 1-D and 2-D arrays")
+            raise ShapeError("hstack supports only 1-D and 2-D arrays")
 
         rows, cols = self.shape
         other_rows, other_cols = other_array.shape
         if other_rows not in (1, rows):
-            raise ValueError(
+            raise ShapeError(
                 f"cannot hstack arrays with {rows} and {other_rows} rows"
             )
 

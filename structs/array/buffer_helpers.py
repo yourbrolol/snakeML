@@ -51,7 +51,7 @@ def _get_shape(data: Any) -> Shape:
 
     Standalone version of ``ArrayUtilsOps._get_shape``.
     """
-    if not isinstance(data, list):
+    if not isinstance(data, (list, tuple)):
         return ()
     if not data:
         return (0,)
@@ -93,10 +93,11 @@ def _buffer_from(values: Any) -> Tuple[Buffer, Shape]:
         if len(values) == 0:
             return values, (0,)
         return values, (len(values),)
+    if not isinstance(values, (list, tuple, dict)):
+        if hasattr(values, "__iter__"):
+            values = list(values)
     buffer = _to_buffer(values)
-    shape = _get_shape(values) if not isinstance(values, Buffer) else ((0,) if len(values) == 0 else (len(values),))
-    if isinstance(values, _Ops) and isinstance(values.data, Buffer):
-        return values.data, values.shape
+    shape = _get_shape(values)
     return buffer, shape
 
 

@@ -95,8 +95,20 @@ class Array(ArrayMixins):
         return self._view.buffer
 
     @data.setter
-    def data(self, value: Buffer) -> None:
-        self._view.buffer = value
+    def data(self, value: Any) -> None:
+        if isinstance(value, Buffer):
+            self._view.buffer = value
+            return
+        buffer, inferred_shape = self._buffer_from(value)
+        self._view.buffer = buffer
+        self._view.offset = 0
+        current_size = 1
+        for dim in self._view.shape:
+            current_size *= dim
+        if self.ndim > 0 and len(buffer) == current_size:
+            return
+        self._view.shape = inferred_shape
+        self._view.strides = View.contiguous_strides(inferred_shape)
 
     @property
     def shape(self) -> Shape:

@@ -8,6 +8,7 @@ applying a scalar :mod:`math` operation. Domain violations (``log``,
 
 from __future__ import annotations
 
+import builtins as _builtins
 import math
 from typing import Any, Callable, List, Optional, Union
 
@@ -136,7 +137,9 @@ def round(array: Any, ndigits: Optional[int] = None) -> Any:
     """Element-wise rounding to ``ndigits`` decimal places (half to even)."""
     return _apply_unary(
         array.data if hasattr(array, "data") else array,
-        lambda x: round(x, ndigits) if ndigits is not None else round(x),
+        lambda x: _builtins.round(x, ndigits)
+        if ndigits is not None
+        else _builtins.round(x),
     )
 
 
