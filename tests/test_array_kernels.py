@@ -352,5 +352,34 @@ class ArrayKernelTests(unittest.TestCase):
         )
 
 
+
+
+    def test_view_edge_cases(self):
+        a = Array([[1, 2, 3], [4, 5, 6]])
+
+        flipped = manipulation.flip(a, 1)
+        self.assertIs(flipped.data, a.data)
+        self.assertEqual(flipped.strides[1], -1)
+        self.assertEqual(flipped.tolist(), [[3, 2, 1], [6, 5, 4]])
+
+        reshaped = a.reshape(3, 2)
+        self.assertEqual(reshaped.tolist(), [[1, 2], [3, 4], [5, 6]])
+        squeezed = Array([[[1], [2]]]).squeeze()
+        self.assertEqual(squeezed.shape, (2,))
+        unsqueezed = Array([1, 2]).unsqueeze(0)
+        self.assertEqual(unsqueezed.shape, (1, 2))
+        broadcast = Array([1, 2]).broadcast_to((2, 2))
+        self.assertEqual(broadcast.tolist(), [[1, 2], [1, 2]])
+
+        split = a.split(2, axis=0)
+        self.assertIs(split[1].data, a.data)
+        unbound = a.unbind(axis=0)
+        self.assertIs(unbound[1].data, a.data)
+
+        empty = Array([]).reshape(0, 2)
+        self.assertEqual(empty.shape, (0, 2))
+        self.assertEqual(empty.tolist(), [])
+
 if __name__ == "__main__":
+
     unittest.main()

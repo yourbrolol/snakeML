@@ -288,5 +288,24 @@ class ArrayTests(unittest.TestCase):
             Array([[1, 2]]).hstack(Array([[1], [2]]))
 
 
+
+
+    def test_view_aliasing(self):
+        a = Array([[1, 2, 3], [4, 5, 6]])
+        t = a.T
+        self.assertIs(t.data, a.data)
+        a[0, 1] = 99
+        self.assertEqual(t[1, 0], 99)
+        t[1, 0] = 7
+        self.assertEqual(a[0, 1], 7)
+
+        f = a.flip(1)
+        self.assertIs(f.data, a.data)
+        self.assertEqual(f.tolist(), [[3, 7, 1], [6, 5, 4]])
+
+        s = a.reshape(3, 2)
+        self.assertEqual(s.tolist(), [[1, 7], [3, 4], [5, 6]])
+
 if __name__ == "__main__":
+
     unittest.main()
