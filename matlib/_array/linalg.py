@@ -13,6 +13,8 @@ from ._common import (
     coords_from_flat,
     flat_from_coords,
     flat_values,
+    permuted_view,
+    shape_of,
 )
 
 logger = get_logger(__name__)
@@ -129,13 +131,22 @@ def solve(a: Any, b: Any) -> Any:
 
 
 def transpose(array: Any) -> Any:
-    """Transpose a 2D array by swapping rows and columns."""
-    values, shape = flat_values(array)
+    """Transpose a 2D array by swapping rows and columns.
+
+    ``Array`` inputs return a view sharing the original Buffer; other inputs
+    fall back to a materialised contiguous result.
+    """
+    shape = shape_of(array)
     logger.debug("transpose requested", ndim=len(shape), shape=shape)
     if len(shape) != 2:
         logger.error("transpose only defined for 2D arrays", ndim=len(shape))
         raise ShapeError("transpose is only defined for 2D arrays")
 
+    view = permuted_view(array, (1, 0))
+    if view is not None:
+        return view
+
+    values, shape = flat_values(array)
     rows, cols = shape
     result = [
         values[row * cols + col]
@@ -146,8 +157,12 @@ def transpose(array: Any) -> Any:
 
 
 def permute(array: Any, axes: Sequence[int]) -> Any:
-    """Permute the dimensions of an N-D array."""
-    values, shape = flat_values(array)
+    """Permute the dimensions of an N-D array.
+
+    ``Array`` inputs return a view sharing the original Buffer; other inputs
+    fall back to a materialised contiguous result.
+    """
+    shape = shape_of(array)
     axes = list(axes)
     ndim = len(shape)
 
@@ -158,6 +173,11 @@ def permute(array: Any, axes: Sequence[int]) -> Any:
         logger.error("permute axes invalid", axes=axes)
         raise ShapeError(f"permute axes must be a permutation of 0..{ndim - 1}")
 
+    view = permuted_view(array, axes)
+    if view is not None:
+        return view
+
+    values, shape = flat_values(array)
     new_shape = tuple(shape[axis] for axis in axes)
     result: List[Any] = []
     for out_index in range(_size(new_shape)):

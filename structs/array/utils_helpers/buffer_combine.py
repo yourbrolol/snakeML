@@ -133,8 +133,9 @@ class ArrayCombineOps(ArrayProtocol):
             ValueError: If the split points are not increasing or out of bounds.
             ShapeError: If the resulting parts would not all be equal-sized.
         """
+        from ..array import Array
         parts = manipulation.split(self, indices_or_sections, axis=axis)
-        return [self.__class__(p) for p in parts]
+        return [p if isinstance(p, Array) else self.__class__(p) for p in parts]
 
     def unbind(self, axis: int = 0) -> List[Any]:
         """Remove a dimension by returning every slice along it.

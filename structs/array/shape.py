@@ -67,9 +67,25 @@ def _flat_from_coords(coords: Sequence[int], shape: tuple[int, ...]) -> int:
 class ArrayShapeOps(ArrayProtocol):
     """Mixin providing reshape/squeeze/transpose-like operations."""
 
-    def reshape(self, *shape: ShapeArg) -> Self:
-        """Return a reshaped copy of the array.
+    def _array_view(
+        self,
+        shape: Sequence[int],
+        strides: Sequence[int],
+        offset: Optional[int] = None,
+    ) -> Self:
+        """Return a new Array sharing this Buffer with new layout metadata."""
+        return self.__class__(
+            self.data,
+            raw=True,
+            shape=tuple(shape),
+            strides=tuple(strides),
+            offset=self.offset if offset is None else offset,
+        )
 
+    def reshape(self, *shape: ShapeArg) -> Self:
+        """Return a reshaped array, sharing storage when possible.
+
+        Contiguous arrays return a view; non-contiguous arrays are copied.
         Exactly one dimension may be ``-1``, in which case it is inferred from
         the total element count. A single sequence argument is accepted as an
         alternative to varargs, and rows are filled in C order.
@@ -93,8 +109,7 @@ class ArrayShapeOps(ArrayProtocol):
             [[1, 2], [3, 4], [5, 6]]
         """
         dims = _as_dims(shape)
-        values = list(self._flatten())
-        total = len(values)
+        total = self.size
 
         if dims.count(-1) > 1:
             logger.error(
@@ -133,6 +148,10 @@ class ArrayShapeOps(ArrayProtocol):
             )
             raise ShapeError(f"Cannot reshape array of size {total} into shape {dims}")
 
+        if self.view.is_contiguous():
+            return self._array_view(dims, self._strides(dims))
+
+        values = list(self._flatten())
         return self._from_buffer(Buffer(values), dims)
 
     def flip(self, axis: int) -> Self:
@@ -173,24 +192,37 @@ class ArrayShapeOps(ArrayProtocol):
             ShapeError: If a requested axis does not have length 1, or an axis
                 index is out of range.
         """
-        new_shape: list[int]
         if axis is None:
-            new_shape = [dim for dim in self.shape if dim != 1]
+            dropped = {index for index, dim in enumerate(self.shape) if dim == 1}
         else:
             if isinstance(axis, int):
                 axis = (axis,)
-            new_shape = list(self.shape)
-            for ax in sorted(axis, reverse=True):
-                if new_shape[ax] != 1:
+            dropped = set()
+            for ax in axis:
+                resolved = ax + self.ndim if ax < 0 else ax
+                if resolved < 0 or resolved >= self.ndim:
                     logger.error(
-                        "cannot squeeze axis with size > 1", axis=ax, size=new_shape[ax]
+                        "invalid axis for squeeze", axis=ax, ndim=self.ndim
                     )
                     raise ShapeError(
-                        f"Cannot squeeze axis {ax} with size {new_shape[ax]}."
+                        f"Axis {ax} is out of bounds for array of dimension {self.ndim}."
                     )
-                del new_shape[ax]
+                if self.shape[resolved] != 1:
+                    logger.error(
+                        "cannot squeeze axis with size > 1",
+                        axis=ax,
+                        size=self.shape[resolved],
+                    )
+                    raise ShapeError(
+                        f"Cannot squeeze axis {ax} with size {self.shape[resolved]}."
+                    )
+                dropped.add(resolved)
 
-        return self.reshape(tuple(new_shape))
+        keep = [index for index in range(self.ndim) if index not in dropped]
+        return self._array_view(
+            tuple(self.shape[index] for index in keep),
+            tuple(self.strides[index] for index in keep),
+        )
 
     def unsqueeze(self, axis: AxisArg) -> Self:
         """Insert new axes of length one.
@@ -209,6 +241,7 @@ class ArrayShapeOps(ArrayProtocol):
         if isinstance(axis, int):
             axis = (axis,)
         new_shape = list(self.shape)
+        new_strides = list(self.strides)
         for ax in sorted(axis):
             if ax < 0:
                 ax += len(new_shape) + 1
@@ -220,7 +253,8 @@ class ArrayShapeOps(ArrayProtocol):
                     f"Axis {ax} is out of bounds for array of dimension {len(new_shape)}."
                 )
             new_shape.insert(ax, 1)
-        return self.reshape(tuple(new_shape))
+            new_strides.insert(ax, 1)
+        return self._array_view(tuple(new_shape), tuple(new_strides))
 
     def swapaxes(self, axis1: int, axis2: int) -> Self:
         """Exchange two axes.
@@ -351,6 +385,7 @@ class ArrayShapeOps(ArrayProtocol):
         if isinstance(axis, int):
             axis = (axis,)
         new_shape = list(self.shape)
+        new_strides = list(self.strides)
         for ax in sorted(axis, reverse=True):
             if ax < 0:
                 ax += len(new_shape) + 1
@@ -359,7 +394,8 @@ class ArrayShapeOps(ArrayProtocol):
                     f"Axis {ax} is out of bounds for array of dimension {len(new_shape)}."
                 )
             new_shape.insert(ax, 1)
-        return self.reshape(tuple(new_shape))
+            new_strides.insert(ax, 1)
+        return self._array_view(tuple(new_shape), tuple(new_strides))
 
     def broadcast_to(self, shape: ShapeArg) -> Self:
         """Broadcast the array up to a larger shape.
@@ -391,19 +427,12 @@ class ArrayShapeOps(ArrayProtocol):
                     f"Cannot broadcast shape {self.shape} to {target_shape}"
                 )
 
-        source_values = list(self._flatten())
-        values = []
-        for index in range(_shape_size(target_shape)):
-            target_coords = _coords_from_flat(index, target_shape)
-            source_coords = []
-            for coord, src_dim in zip(target_coords, src_shape):
-                source_coords.append(0 if src_dim == 1 else coord)
-            values.append(
-                source_values[_flat_from_coords(source_coords[-self.ndim :], self.shape)]
-                if self.ndim
-                else source_values[0]
-            )
-        return self._from_buffer(Buffer(values), target_shape)
+        src_shape = (1,) * (len(target_shape) - self.ndim) + self.shape
+        strides = [0] * (len(target_shape) - self.ndim) + list(self.strides)
+        for i, (src_dim, dst_dim) in enumerate(zip(src_shape, target_shape)):
+            if src_dim == 1 and dst_dim != 1:
+                strides[i] = 0
+        return self._array_view(target_shape, strides)
 
     def repeat(self, repeats: Union[int, Sequence[int]], axis: Optional[int] = None) -> Self:
         """Repeat elements along an axis.

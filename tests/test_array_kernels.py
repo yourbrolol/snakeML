@@ -87,6 +87,25 @@ class ArrayKernelTests(unittest.TestCase):
         self.assertEqual(linalg.cross(Array([1, 0, 0]), Array([0, 1, 0])).tolist(), [0, 0, 1])
         self.assertEqual(linalg.cholesky(Array([[4, 2], [2, 3]])).tolist(), [[2.0, 0], [1.0, math.sqrt(2)]])
 
+    def test_transpose_and_permute_are_buffer_views(self):
+        a = Array([[1, 2, 3], [4, 5, 6]])
+
+        transposed = a.T
+        self.assertIs(transposed.data, a.data)
+        self.assertEqual(transposed.shape, (3, 2))
+        self.assertEqual(transposed.strides, (1, 3))
+        self.assertEqual(transposed.tolist(), [[1, 4], [2, 5], [3, 6]])
+
+        a[0, 1] = 20
+        self.assertEqual(transposed[1, 0], 20)
+        transposed[1, 0] = 50
+        self.assertEqual(a[0, 1], 50)
+
+        cube = Array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+        permuted = linalg.permute(cube, (2, 0, 1))
+        self.assertIs(permuted.data, cube.data)
+        self.assertEqual(permuted.tolist(), [[[1, 3], [5, 7]], [[2, 4], [6, 8]]])
+
     def test_linalg_validation(self):
         with self.assertRaises(ShapeError):
             linalg.det(Array([[1, 2, 3], [4, 5, 6]]))

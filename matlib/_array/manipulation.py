@@ -9,10 +9,14 @@ from debug.errors import ShapeError, ValidationError
 
 from ._common import (
     array_from,
+    array_view,
     coords_from_flat,
+    dropped_axis_view,
     flat_from_coords,
     flat_values,
+    shape_of,
     size_of,
+    sliced_view,
 )
 
 logger = get_logger(__name__)
@@ -80,11 +84,28 @@ def concatenate(arrays: Sequence[Any], axis: int = 0) -> Any:
 
 
 def flip(array: Any, axis: int) -> Any:
-    """Flip an array along the specified axis."""
-    values, shape = flat_values(array)
+    """Flip an array along the specified axis.
+
+    ``Array`` inputs return a negative-stride view sharing the original
+    Buffer; other inputs fall back to a materialised contiguous result.
+    """
+    shape = shape_of(array)
     ndim = len(shape)
     axis_norm = axis % ndim
 
+    strides = getattr(array, "strides", None)
+    if strides is not None:
+        new_strides = list(strides)
+        new_strides[axis_norm] = -new_strides[axis_norm]
+        offset = getattr(array, "offset", 0)
+        if shape[axis_norm]:
+            offset += (shape[axis_norm] - 1) * strides[axis_norm]
+        view = array_view(array, shape, new_strides, offset)
+        if view is not None:
+            logger.debug("flip completed as view", axis=axis_norm, shape=shape)
+            return view
+
+    values, shape = flat_values(array)
     result = [None] * size_of(shape)
     for index in range(size_of(shape)):
         coords = coords_from_flat(index, shape)
@@ -150,7 +171,7 @@ def split(
             divisible.
         ValidationError: If ``indices_or_sections`` is 0 or negative.
     """
-    values, shape = flat_values(array)
+    shape = shape_of(array)
     ndim = len(shape)
     axis_norm = axis % ndim
     axis_size = shape[axis_norm]
@@ -176,6 +197,22 @@ def split(
         points = sorted(set(indices_or_sections))
         split_points = [0] + points + [axis_size]
 
+    views: List[Any] = []
+    for start, stop in zip(split_points, split_points[1:]):
+        view = sliced_view(array, axis_norm, start, stop)
+        if view is None:
+            break
+        views.append(view)
+    if len(views) == len(split_points) - 1:
+        logger.debug(
+            "split completed as views",
+            n_sections=len(views),
+            axis=axis_norm,
+            in_shape=shape,
+        )
+        return views
+
+    values, shape = flat_values(array)
     results: List[Any] = []
     for start, stop in zip(split_points, split_points[1:]):
         section_size = stop - start
@@ -201,8 +238,12 @@ def split(
 
 
 def unbind(array: Any, axis: int = 0) -> List[Any]:
-    """Remove a dimension by returning all slices along it."""
-    values, shape = flat_values(array)
+    """Remove a dimension by returning all slices along it.
+
+    Multi-dimensional ``Array`` inputs return axis-dropped views sharing the
+    original Buffer; other inputs fall back to materialised results.
+    """
+    shape = shape_of(array)
     ndim = len(shape)
     axis_norm = axis % ndim
     axis_size = shape[axis_norm]
@@ -211,6 +252,24 @@ def unbind(array: Any, axis: int = 0) -> List[Any]:
         dim for index, dim in enumerate(shape) if index != axis_norm
     )
 
+    if out_shape:
+        views: List[Any] = []
+        for position in range(axis_size):
+            view = dropped_axis_view(array, axis_norm, position)
+            if view is None:
+                break
+            views.append(view)
+        if len(views) == axis_size:
+            logger.debug(
+                "unbind completed as views",
+                axis=axis_norm,
+                in_shape=shape,
+                n_slices=axis_size,
+                out_shape=out_shape,
+            )
+            return views
+
+    values, shape = flat_values(array)
     results: List[Any] = []
     for position in range(axis_size):
         if out_shape:

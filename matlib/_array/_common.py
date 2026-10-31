@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 Shape = Tuple[int, ...]
 
@@ -79,12 +79,85 @@ def array_from(values: Any, shape: Shape) -> Any:
     return Array(Buffer(list(values)), raw=True, shape=tuple(shape))
 
 
+def array_view(
+    value: Any,
+    shape: Shape,
+    strides: Sequence[int],
+    offset: Optional[int] = None,
+) -> Any:
+    """Return an Array view sharing *value*'s Buffer, or ``None``.
+
+    Plain nested lists, Buffers, and scalars return ``None`` so callers can
+    fall back to materialising a new contiguous array.
+    """
+    from structs.array.array import Array
+
+    if not isinstance(value, Array):
+        return None
+    return value.__class__(
+        value.data,
+        raw=True,
+        shape=tuple(shape),
+        strides=tuple(strides),
+        offset=value.offset if offset is None else offset,
+    )
+
+
+def permuted_view(value: Any, axes: Sequence[int]) -> Any:
+    """Return a shape/stride-permuted view of an Array, or ``None``.
+
+    The new array shares the original ``Buffer``; no element data is copied.
+    Plain nested lists, Buffers, and scalars return ``None`` so callers can
+    fall back to materialising a contiguous result.
+    """
+    from structs.array.array import Array
+
+    if not isinstance(value, Array):
+        return None
+    old_shape = tuple(value.shape)
+    old_strides = tuple(value.strides)
+    return array_view(
+        value,
+        tuple(old_shape[axis] for axis in axes),
+        tuple(old_strides[axis] for axis in axes),
+    )
+
+
+def sliced_view(value: Any, axis: int, start: int, stop: int) -> Any:
+    """Return an Array slice view along *axis*, or ``None``."""
+    from structs.array.array import Array
+
+    if not isinstance(value, Array):
+        return None
+    axis %= len(value.shape)
+    shape = list(value.shape)
+    shape[axis] = max(0, stop - start)
+    offset = value.offset + start * value.strides[axis]
+    return array_view(value, tuple(shape), value.strides, offset)
+
+
+def dropped_axis_view(value: Any, axis: int, position: int) -> Any:
+    """Return an Array view with *axis* fixed at *position* and removed."""
+    from structs.array.array import Array
+
+    if not isinstance(value, Array):
+        return None
+    axis %= len(value.shape)
+    shape = tuple(dim for index, dim in enumerate(value.shape) if index != axis)
+    strides = tuple(stride for index, stride in enumerate(value.strides) if index != axis)
+    offset = value.offset + position * value.strides[axis]
+    return array_view(value, shape, strides, offset)
+
+
 def as_array(value: Any) -> Any:
     """Return *value* as an ``Array``, converting Buffer/scalar/list inputs."""
     from structs.array.array import Array
+    from structs.array.buffer import Buffer
 
     if isinstance(value, Array):
         return value
+    if isinstance(value, Buffer):
+        return Array(value, raw=True, shape=(len(value),))
     if is_buffer(value):
         return array_from(value.buffer, (len(value),))
     if isinstance(value, (list, tuple)):

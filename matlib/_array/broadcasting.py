@@ -46,12 +46,12 @@ def broadcast(a: Any, b: Any) -> Tuple[Any, Any, str]:
     b_array = as_array(b)
 
     if a_is_1d:
-        a_array = a_array.reshape(1, a_array.shape[0])
+        a_array = a_array.unsqueeze(0)
     elif a_array.ndim == 0:
         a_array = a_array.reshape(1, 1)
 
     if b_is_1d:
-        b_array = b_array.reshape(b_array.shape[0], 1)
+        b_array = b_array.unsqueeze(1)
     elif b_array.ndim == 0:
         b_array = b_array.reshape(1, 1)
 
