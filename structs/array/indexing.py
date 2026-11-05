@@ -7,6 +7,7 @@ one dimension at a time to the nested list or flat ``Buffer`` representation.
 from __future__ import annotations
 
 from typing import Any, Iterator, List, Optional, Tuple, cast
+from collections import deque
 
 from debug import get_logger
 from debug.errors import TypeMismatchError
@@ -264,49 +265,109 @@ def _coerce_value(value: Any) -> Any:
     return value
 
 
+def _result_shape(key, shape):
+    result = []
+
+    for head, size in zip(key, shape):
+        if isinstance(head, bool):
+            raise TypeMismatchError("Boolean scalar indices are not supported")
+
+        if _is_int_index(head):
+            _normalize_int(cast(int, head), size)
+
+        elif isinstance(head, slice):
+            start, stop, step = head.indices(size)
+            result.append(len(range(start, stop, step)))
+
+        else:
+            result.append(len(_indices_for(head, size)))
+
+    return tuple(result)
+
+
 def _getitem_buffer(
     buffer: Buffer,
     key: NormalizedKey,
     offset: int,
-    shape: Tuple[int, ...],
-    strides: Tuple[int, ...],
-    depth: int = 0,
+    shape: deque[int] | Tuple[int, ...],
+    strides: deque[int] | Tuple[int, ...],
 ) -> Any:
     """Read from flat buffer storage using resolved shape/strides.
 
-    Integer positions are resolved against each axis size (not the buffer
-    length), and the flat offset is ``offset + sum(i[d] * strides[d])``.
+    Integer/slice-only indexing produces a lazy view.
+    Fancy indexing materialises a copy.
     """
-    if depth == len(shape):
-        return buffer[offset]
+    from structs.array.array import Array
 
-    head = key[depth]
-    if isinstance(head, bool):
-        raise TypeMismatchError("Boolean scalar indices are not supported")
+    shape_t = tuple(shape)
+    strides_t = tuple(strides)
 
-    if _is_int_index(head):
-        index = _normalize_int(cast(int, head), shape[depth])
-        return _getitem_buffer(
-            buffer,
-            key,
-            offset + index * strides[depth],
-            shape,
-            strides,
-            depth + 1,
+    cur_offset = offset
+    out_shape: List[int] = []
+    out_strides: List[int] = []
+
+    for depth, head in enumerate(key):
+        if isinstance(head, bool):
+            raise TypeMismatchError("Boolean scalar indices are not supported")
+
+        if _is_int_index(head):
+            index = _normalize_int(cast(int, head), shape_t[depth])
+            cur_offset += index * strides_t[depth]
+            continue
+
+        if isinstance(head, slice):
+            start, stop, step = head.indices(shape_t[depth])
+            count = len(range(start, stop, step))
+
+            cur_offset += start * strides_t[depth]
+            out_shape.append(count)
+            out_strides.append(strides_t[depth] * step)
+            continue
+
+        # Fancy indexing: materialize from this axis onward.
+        indices = _indices_for(head, shape_t[depth])
+
+        remaining_key = key[depth + 1 :]
+        remaining_shape = shape_t[depth + 1 :]
+        remaining_strides = strides_t[depth + 1 :]
+
+        # Dimensions preserved before the fancy index must
+        # also be preserved in the resulting copy.
+        prefix_shape = tuple(out_shape)
+
+        nested = []
+        for index in indices:
+            sub = _getitem_buffer(
+                buffer,
+                remaining_key,
+                cur_offset + index * strides_t[depth],
+                remaining_shape,
+                remaining_strides,
+            )
+
+            nested.append(sub.tolist() if isinstance(sub, Array) else sub)
+
+        result_shape = (
+            tuple(out_shape)
+            + (len(indices),)
+            + _result_shape(remaining_key, remaining_shape)
         )
 
-    indices = _indices_for(head, shape[depth])
-    return [
-        _getitem_buffer(
-            buffer,
-            key,
-            offset + index * strides[depth],
-            shape,
-            strides,
-            depth + 1,
+        return Array(
+            values=nested,
+            shape=result_shape,
         )
-        for index in indices
-    ]
+
+    if not out_shape:
+        return buffer[cur_offset]
+
+    return Array(
+        values=buffer,
+        raw=True,
+        shape=tuple(out_shape),
+        strides=tuple(out_strides),
+        offset=cur_offset,
+    )
 
 
 def _getitem(
@@ -349,44 +410,12 @@ def _getitem(
             target,
             key,
             array.offset if depth == 0 else 0,
-            array.shape,
-            array.strides,
-            depth,
+            tuple(array.shape),
+            tuple(array.strides),
         )
 
     if not key:
         return target
-
-
-def _assign_list(target: List[Any], key: NormalizedKey, value: Any) -> None:
-    """Assign ``value`` into a nested list using a normalized remaining key."""
-    head, tail = key[0], key[1:]
-
-    if isinstance(head, bool):
-        raise TypeMismatchError("Boolean scalar indices are not supported")
-
-    if _is_int_index(head):
-        index = _normalize_int(cast(int, head), len(target))
-        if not tail:
-            target[index] = _scalar_value(value)
-        else:
-            child = target[index]
-            if not isinstance(child, list):
-                raise IndexError("too many indices for array")
-            _assign_list(child, tuple(tail), value)
-        return
-
-    indices = _indices_for(head, len(target))
-    remaining = _selected_dim_count(key)
-
-    for index, sub_value in _broadcast_sequence(indices, value, remaining):
-        if not tail:
-            target[index] = _scalar_value(sub_value)
-        else:
-            child = target[index]
-            if not isinstance(child, list):
-                raise IndexError("too many indices for array")
-            _assign_list(child, tuple(tail), sub_value)
 
 
 def _assign_buffer(
