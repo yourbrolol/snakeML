@@ -418,6 +418,94 @@ def _getitem(
         return target
 
 
+def _assign_view(
+    buffer: Buffer,
+    offset: int,
+    shape: Tuple[int, ...],
+    strides: Tuple[int, ...],
+    value: Any,
+) -> None:
+    """Write ``value`` into a resolved buffer view using strides and broadcasting.
+
+    Args:
+        buffer: Flat storage being written.
+        offset: Physical position of the first element of the view.
+        shape: Logical shape of the view (already resolved from the key).
+        strides: Element step per view axis.
+        value: Scalar or nested sequence broadcast following NumPy's
+            trailing-dimension alignment.
+
+    Raises:
+        IndexError: If ``value`` cannot be broadcast to the view.
+    """
+    if not shape:
+        buffer[offset] = _scalar_value(value)
+        return
+
+    indices = list(range(shape[0]))
+    remaining_dims = len(shape)
+
+    for index, sub_value in _broadcast_sequence(indices, value, remaining_dims):
+        _assign_view(
+            buffer,
+            offset + index * strides[0],
+            shape[1:],
+            strides[1:],
+            sub_value,
+        )
+
+
+def _assign_fancy(
+    buffer: Buffer,
+    offset: int,
+    prefix_shape: Tuple[int, ...],
+    prefix_strides: Tuple[int, ...],
+    indices: List[int],
+    stride: int,
+    remaining_key: NormalizedKey,
+    remaining_shape: Tuple[int, ...],
+    remaining_strides: Tuple[int, ...],
+    value: Any,
+) -> None:
+    """Write ``value`` through a fancy index, splitting it across any prefix axes.
+
+    Advanced indexing materialises the selection: every position in ``indices``
+    is written individually, recursing over ``remaining_key`` for the trailing
+    dimensions. ``prefix_shape``/``prefix_strides`` describe simple slice axes
+    that were resolved before the fancy index, so the value is first split along
+    those axes to keep broadcasting aligned with the full selection.
+    """
+    if not prefix_shape:
+        remaining_dims = 1 + _selected_dim_count(remaining_key)
+        for index, sub_value in _broadcast_sequence(indices, value, remaining_dims):
+            _assign_buffer(
+                buffer,
+                remaining_key,
+                sub_value,
+                offset + index * stride,
+                remaining_shape,
+                remaining_strides,
+            )
+        return
+
+    remaining_dims = len(prefix_shape) + 1 + _selected_dim_count(remaining_key)
+    for index, sub_value in _broadcast_sequence(
+        list(range(prefix_shape[0])), value, remaining_dims
+    ):
+        _assign_fancy(
+            buffer,
+            offset + index * prefix_strides[0],
+            prefix_shape[1:],
+            prefix_strides[1:],
+            indices,
+            stride,
+            remaining_key,
+            remaining_shape,
+            remaining_strides,
+            sub_value,
+        )
+
+
 def _assign_buffer(
     buffer: Buffer,
     key: NormalizedKey,
@@ -425,43 +513,52 @@ def _assign_buffer(
     offset: int,
     shape: Tuple[int, ...],
     strides: Tuple[int, ...],
-    depth: int = 0,
 ) -> None:
-    """Assign ``value`` into flat buffer storage using shape/strides."""
-    if depth == len(shape):
-        buffer[offset] = _scalar_value(value)
-        return
+    """Assign ``value`` into flat buffer storage using resolved shape/strides.
 
-    head = key[depth]
-    if isinstance(head, bool):
-        raise TypeMismatchError("Boolean scalar indices are not supported")
+    Integer/slice-only indexing resolves to a single strided view and writes
+    the value into it. Fancy indexing materialises the selection and writes
+    each selected position recursively, mirroring ``_getitem_buffer``.
+    """
+    cur_offset = offset
+    out_shape: List[int] = []
+    out_strides: List[int] = []
 
-    if _is_int_index(head):
-        index = _normalize_int(cast(int, head), shape[depth])
-        _assign_buffer(
+    for depth, head in enumerate(key):
+        if isinstance(head, bool):
+            raise TypeMismatchError("Boolean scalar indices are not supported")
+
+        if _is_int_index(head):
+            index = _normalize_int(cast(int, head), shape[depth])
+            cur_offset += index * strides[depth]
+            continue
+
+        if isinstance(head, slice):
+            start, stop, step = head.indices(shape[depth])
+            count = len(range(start, stop, step))
+
+            cur_offset += start * strides[depth]
+            out_shape.append(count)
+            out_strides.append(strides[depth] * step)
+            continue
+
+        # Fancy indexing: materialize from this axis onward.
+        indices = _indices_for(head, shape[depth])
+        _assign_fancy(
             buffer,
-            key,
+            cur_offset,
+            tuple(out_shape),
+            tuple(out_strides),
+            indices,
+            strides[depth],
+            key[depth + 1 :],
+            tuple(shape[depth + 1 :]),
+            tuple(strides[depth + 1 :]),
             value,
-            offset + index * strides[depth],
-            shape,
-            strides,
-            depth + 1,
         )
         return
 
-    indices = _indices_for(head, shape[depth])
-    remaining = _selected_dim_count(key, depth)
-
-    for index, sub_value in _broadcast_sequence(indices, value, remaining):
-        _assign_buffer(
-            buffer,
-            key,
-            sub_value,
-            offset + index * strides[depth],
-            shape,
-            strides,
-            depth + 1,
-        )
+    _assign_view(buffer, cur_offset, tuple(out_shape), tuple(out_strides), value)
 
 
 def _setitem(
@@ -514,7 +611,6 @@ def _setitem(
             array.offset if depth == 0 else 0,
             array.shape,
             array.strides,
-            depth,
         )
         return
 
