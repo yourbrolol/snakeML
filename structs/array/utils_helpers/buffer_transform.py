@@ -5,7 +5,7 @@ from __future__ import annotations
 from bisect import bisect_left, bisect_right
 from typing import Any, List
 
-from structs.dtypes import DTypeName, NestedList, SearchSide, Self, Shape
+from structs.dtypes import DTypeName, SearchSide, Self
 
 from ..buffer import Buffer
 from ..protocol import ArrayProtocol
@@ -15,11 +15,6 @@ __all__ = ["ArrayTransformOps"]
 
 class ArrayTransformOps(ArrayProtocol):
     """Elementwise, fill, masking, and ordering operations."""
-
-    # Re-declared because this mixin mutates Array data in place (fill).
-    data: NestedList
-    shape: Shape
-    ndim: int
 
     def _op_flat_values(self, value: Any) -> List[Any]:
         """Return a flat value list for where/mask operands.
@@ -82,12 +77,8 @@ class ArrayTransformOps(ArrayProtocol):
         Returns:
             Self: ``self``, with its Buffer mutated in place.
         """
-        if isinstance(self.data, Buffer):
-            for physical in self._flat_physical_indices():
-                self.data[physical] = value
-            return self
-        self.data = self._fill_value(self.data, value)
-        self.shape = self._get_shape(self.data)
+        for physical in self._flat_physical_indices():
+            self.data[physical] = value
         return self
 
     def where(self, condition: Any, x: Any, y: Any) -> Self:

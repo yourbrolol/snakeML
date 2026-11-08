@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import Optional, Union, cast, overload
 
 from structs.dtypes import Scalar
 
@@ -24,6 +24,12 @@ class Buffer:
             int: The length of the underlying storage.
         """
         return len(self.buffer)
+
+    @overload
+    def __getitem__(self, key: int) -> Scalar: ...
+
+    @overload
+    def __getitem__(self, key: slice) -> list[Scalar]: ...
 
     def __getitem__(self, key: Union[int, slice]) -> Union[Scalar, list[Scalar]]:
         """Read one element or a slice of the flat storage.

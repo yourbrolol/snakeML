@@ -20,10 +20,6 @@ __all__ = ["ArrayBufferOps"]
 class ArrayBufferOps(ArrayProtocol):
     """Core conversion, traversal, metadata, and wrapping helpers."""
 
-    data: NestedList
-    shape: Shape
-    ndim: int
-
     def _from_buffer(self, buffer: Buffer, shape: Shape) -> Self:
         return self.__class__(buffer, raw=True, shape=shape)
 
@@ -69,7 +65,7 @@ class ArrayBufferOps(ArrayProtocol):
             scalars so that text is never exploded into characters.
         """
         if isinstance(values, self.__class__):
-            return values.data
+            return self._unwrap(values)
         if isinstance(values, (list, tuple)):
             return [self._to_list(v) for v in values]
         if isinstance(values, range):

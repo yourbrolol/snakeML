@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 from typing import Any, Optional, Sequence
 
-from structs.dtypes import IndexList, NestedList, Self, Shape
+from structs.dtypes import IndexList, Self
 
 from ..buffer import Buffer
 from ..protocol import ArrayProtocol
@@ -15,11 +15,6 @@ __all__ = ["ArraySelectOps"]
 
 class ArraySelectOps(ArrayProtocol):
     """Flat take/put/gather/scatter and random sampling operations."""
-
-    # Re-declared because this mixin mutates Array data in place (put/shuffle).
-    data: NestedList
-    shape: Shape
-    ndim: int
 
     def take(self, indices: IndexList) -> Self:
         """Select values from a flat view of the array.
@@ -66,10 +61,6 @@ class ArraySelectOps(ArrayProtocol):
         Raises:
             IndexError: If a position is out of range.
         """
-        if not isinstance(self.data, Buffer):
-            for idx, value in zip(indices, values):
-                self[idx] = value
-            return self
         for idx, value in zip(indices, values):
             physical = self._flat_physical_index(idx)
             self.data[physical] = value
@@ -109,11 +100,6 @@ class ArraySelectOps(ArrayProtocol):
             Self: ``self``, with the elements randomly permuted and the
             original shape restored.
         """
-        if not isinstance(self.data, Buffer):
-            flat = list(self._flatten())
-            random.shuffle(flat)
-            self.data = self.__class__(flat).data
-            return self
         positions = list(self._flat_physical_indices())
         values = [self.data[position] for position in positions]
         random.shuffle(values)

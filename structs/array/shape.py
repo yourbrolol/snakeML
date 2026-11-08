@@ -414,7 +414,9 @@ class ArrayShapeOps(ArrayProtocol):
             ShapeError: If the target rank is smaller than ``ndim`` or an axis
                 is neither equal nor ``1`` in the source.
         """
-        target_shape = tuple(int(dim) for dim in shape)  # type: ignore[arg-type]
+        if isinstance(shape, int):
+            shape = (shape,)
+        target_shape = tuple(int(dim) for dim in shape)
         if len(target_shape) < self.ndim:
             raise ShapeError(f"Cannot broadcast shape {self.shape} to {target_shape}")
         if any(dim < 0 for dim in target_shape):
