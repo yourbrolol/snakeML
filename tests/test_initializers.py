@@ -15,8 +15,8 @@ class InitializerTests(unittest.TestCase):
     def test_zeros_and_ones_fill_arrays(self):
         zeros = Zeros()([2, 2])
         ones = Ones()([2, 2])
-        self.assertEqual(zeros.data, [[0, 0], [0, 0]])
-        self.assertEqual(ones.data, [[1, 1], [1, 1]])
+        self.assertEqual(zeros.tolist(), [[0, 0], [0, 0]])
+        self.assertEqual(ones.tolist(), [[1, 1], [1, 1]])
 
     def test_random_initializers_return_expected_shape(self):
         normal_values = Normal()([2, 2], mean=1.0, std=0.5)

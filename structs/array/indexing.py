@@ -1,16 +1,18 @@
 """Private recursive indexing engine backing ``Array.__getitem__``/``__setitem__``.
 
 Keys are first normalised to exactly ``ndim`` positional entries, then applied
-one dimension at a time to the nested list representation.
+one dimension at a time to the nested list or flat ``Buffer`` representation.
 """
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, Iterator, List, Optional, Tuple, cast
+from collections import deque
 
 from debug import get_logger
 from debug.errors import TypeMismatchError
 from structs.dtypes import IndexElement, IndexKey
+from structs.array.buffer import Buffer
 
 logger = get_logger(__name__)
 
@@ -23,6 +25,147 @@ __all__ = [
 
 #: A key guaranteed to be a tuple with exactly one entry per dimension.
 NormalizedKey = Tuple[IndexElement, ...]
+
+
+def _is_int_index(value: Any) -> bool:
+    """Return True for genuine integer indices (``bool`` is not an int here)."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _normalize_int(index: int, dim: int) -> int:
+    """Resolve a possibly negative position and validate it against ``dim``.
+
+    Args:
+        index: The user-supplied integer position.
+        dim: Size of the axis being indexed.
+
+    Returns:
+        int: A non-negative position in ``[0, dim)``.
+
+    Raises:
+        IndexError: If the position is out of bounds.
+    """
+    resolved = index + dim if index < 0 else index
+    if resolved < 0 or resolved >= dim:
+        raise IndexError(f"index {index} is out of bounds for axis with size {dim}")
+    return resolved
+
+
+def _indices_for(head: Any, dim: int) -> List[int]:
+    """Expand a slice or fancy index into resolved integer positions.
+
+    Args:
+        head: A ``slice``, an integer list, or a boolean mask.
+        dim: Size of the axis being indexed.
+
+    Returns:
+        List[int]: Positions selected along the axis, in order.
+
+    Raises:
+        IndexError: If a boolean mask length does not match ``dim``, or an
+            integer position is out of bounds.
+        TypeMismatchError: If the list contains neither all bools nor all ints.
+    """
+    if isinstance(head, slice):
+        return list(range(*head.indices(dim)))
+
+    if isinstance(head, (list, tuple)):
+        if len(head) == 0:
+            return []
+
+        if all(isinstance(item, bool) for item in head):
+            if len(head) != dim:
+                raise IndexError(
+                    f"boolean index length {len(head)} does not match axis size {dim}"
+                )
+            return [i for i, keep in enumerate(head) if keep]
+
+        if all(_is_int_index(item) for item in head):
+            return [_normalize_int(item, dim) for item in head]
+
+        raise TypeMismatchError(
+            "A list/tuple index must contain either all booleans or all integers"
+        )
+
+    raise TypeMismatchError(f"Unsupported index type: {type(head).__name__}")
+
+
+def _selected_dim_count(key: NormalizedKey, start: int = 0) -> int:
+    """Count axes in ``key[start:]`` that keep their dimension (non-int)."""
+    return sum(1 for entry in key[start:] if not _is_int_index(entry))
+
+
+def _value_ndim(value: Any) -> int:
+    """Return how many nested list dimensions ``value`` has (0 for a scalar)."""
+    if isinstance(value, (list, tuple)):
+        if not value:
+            return 1
+        return 1 + _value_ndim(value[0])
+    return 0
+
+
+def _scalar_value(value: Any) -> Any:
+    """Unwrap single-element sequences destined for a scalar position."""
+    if isinstance(value, (list, tuple)):
+        if len(value) == 1:
+            return _scalar_value(value[0])
+        raise IndexError("cannot assign a sequence to a scalar element")
+    if isinstance(value, Buffer):
+        if len(value) == 1:
+            return value[0]
+        raise IndexError("cannot assign a sequence to a scalar element")
+    return value
+
+
+def _broadcast_sequence(
+    indices: List[int], value: Any, remaining_dims: int
+) -> Iterator[Tuple[int, Any]]:
+    """Pair selected positions with the slice of ``value`` that belongs to them.
+
+    Value dimensions are aligned to the trailing selected dimensions, mirroring
+    NumPy broadcasting. A scalar or a lower-rank value is broadcast across the
+    current axis.
+
+    Args:
+        indices: Positions selected along the current axis.
+        value: Value supplied for the selection.
+        remaining_dims: Number of dimension-keeping axes from here onward.
+
+    Yields:
+        Tuple[int, Any]: ``(position, sub_value)`` pairs.
+
+    Raises:
+        IndexError: If ``value`` has too many dimensions or cannot be
+            broadcast across the selection.
+    """
+    value_ndim = _value_ndim(value)
+
+    if value_ndim == 0 or value_ndim < remaining_dims:
+        for index in indices:
+            yield index, value
+        return
+
+    if value_ndim > remaining_dims:
+        raise IndexError(
+            f"too many value dimensions: value has {value_ndim}, "
+            f"selection expects {remaining_dims}"
+        )
+
+    if not isinstance(value, list):
+        raise IndexError("expected a sequence for this dimension")
+
+    count = len(value)
+    if count == len(indices):
+        for index, sub_value in zip(indices, value):
+            yield index, sub_value
+    elif count == 1 and len(indices) != 1:
+        for index in indices:
+            yield index, value[0]
+    else:
+        raise IndexError(
+            f"could not broadcast value of length {count} "
+            f"into selection of length {len(indices)}"
+        )
 
 
 def _normalize_key(ndim: int, _key: IndexKey) -> NormalizedKey:
@@ -39,7 +182,8 @@ def _normalize_key(ndim: int, _key: IndexKey) -> NormalizedKey:
         padded the same way.
 
     Raises:
-        IndexError: If the key contains more than one ``Ellipsis``.
+        IndexError: If the key contains more than one ``Ellipsis``, or more
+            indices than the array has dimensions.
 
     Example:
         >>> _normalize_key(3, (0, Ellipsis))
@@ -47,44 +191,183 @@ def _normalize_key(ndim: int, _key: IndexKey) -> NormalizedKey:
     """
     key = _key if isinstance(_key, tuple) else (_key,)
 
-    if key.count(Ellipsis) > 1:
+    ellipsis_positions = [i for i, entry in enumerate(key) if entry is Ellipsis]
+    if len(ellipsis_positions) > 1:
         logger.error("invalid indexing key contains multiple ellipses", key=key)
-        raise IndexError("__getitem__ should at most contain one Ellipsis (...)")
+        raise IndexError("An index can only contain a single Ellipsis (...)")
 
-    cleaned: List[IndexElement] = []
-    for idx in key:
-        if idx is Ellipsis:
-            pad_count = ndim - (len(key) - 1)
-            cleaned.extend([slice(None)] * pad_count)
-        else:
-            cleaned.append(idx)
-
-    if len(cleaned) < ndim:
-        cleaned.extend([slice(None)] * (ndim - len(cleaned)))
+    if ellipsis_positions:
+        position = ellipsis_positions[0]
+        pad_count = ndim - (len(key) - 1)
+        if pad_count < 0:
+            raise IndexError(
+                f"too many indices for array: array is {ndim}-dimensional, "
+                f"but {len(key) - 1} were indexed"
+            )
+        cleaned: List[IndexElement] = (
+            list(key[:position]) + [slice(None)] * pad_count + list(key[position + 1 :])
+        )
+    else:
+        if len(key) > ndim:
+            raise IndexError(
+                f"too many indices for array: array is {ndim}-dimensional, "
+                f"but {len(key)} were indexed"
+            )
+        cleaned = list(key) + [slice(None)] * (ndim - len(key))
 
     logger.debug("normalized key", cleaned=cleaned)
 
     return tuple(cleaned)
 
 
+def _buffer_to_nested(
+    buffer: Buffer,
+    shape: Tuple[int, ...],
+    strides: Tuple[int, ...],
+    offset: int,
+    depth: int = 0,
+) -> Any:
+    """Rebuild a nested list from a flat buffer using shape/strides/offset."""
+    if depth == len(shape):
+        return buffer[offset]
+    return [
+        _buffer_to_nested(
+            buffer, shape, strides, offset + i * strides[depth], depth + 1
+        )
+        for i in range(shape[depth])
+    ]
+
+
 def _coerce_value(value: Any) -> Any:
     """Coerce Array instances or nested sequences into plain Python lists for item assignment.
 
     Args:
-        value: A scalar, ``Array``, ``list``, or ``tuple``.
+        value: A scalar, ``Array``, ``Buffer``, ``list``, or ``tuple``.
 
     Returns:
-        Any: ``Array`` inputs are replaced by their underlying ``data``;
-        ``list``/``tuple`` inputs are rebuilt recursively as lists; scalars are
-        returned unchanged.
+        Any: ``Array`` inputs are replaced by their underlying nested data (a
+        buffer-backed array is expanded through its shape/strides/offset);
+        ``Buffer`` inputs become flat lists; ``list``/``tuple`` inputs are
+        rebuilt recursively as lists; scalars are returned unchanged.
     """
     from structs.array.array import Array
 
     if isinstance(value, Array):
+        if isinstance(value.data, Buffer):
+            return _buffer_to_nested(
+                value.data, value.shape, value.strides, value.offset
+            )
         return value.data
+    if isinstance(value, Buffer):
+        return list(value.buffer)
     if isinstance(value, (list, tuple)):
         return [_coerce_value(item) for item in value]
     return value
+
+
+def _result_shape(key, shape):
+    result = []
+
+    for head, size in zip(key, shape):
+        if isinstance(head, bool):
+            raise TypeMismatchError("Boolean scalar indices are not supported")
+
+        if _is_int_index(head):
+            _normalize_int(cast(int, head), size)
+
+        elif isinstance(head, slice):
+            start, stop, step = head.indices(size)
+            result.append(len(range(start, stop, step)))
+
+        else:
+            result.append(len(_indices_for(head, size)))
+
+    return tuple(result)
+
+
+def _getitem_buffer(
+    buffer: Buffer,
+    key: NormalizedKey,
+    offset: int,
+    shape: deque[int] | Tuple[int, ...],
+    strides: deque[int] | Tuple[int, ...],
+) -> Any:
+    """Read from flat buffer storage using resolved shape/strides.
+
+    Integer/slice-only indexing produces a lazy view.
+    Fancy indexing materialises a copy.
+    """
+    from structs.array.array import Array
+
+    shape_t = tuple(shape)
+    strides_t = tuple(strides)
+
+    cur_offset = offset
+    out_shape: List[int] = []
+    out_strides: List[int] = []
+
+    for depth, head in enumerate(key):
+        if isinstance(head, bool):
+            raise TypeMismatchError("Boolean scalar indices are not supported")
+
+        if _is_int_index(head):
+            index = _normalize_int(cast(int, head), shape_t[depth])
+            cur_offset += index * strides_t[depth]
+            continue
+
+        if isinstance(head, slice):
+            start, stop, step = head.indices(shape_t[depth])
+            count = len(range(start, stop, step))
+
+            cur_offset += start * strides_t[depth]
+            out_shape.append(count)
+            out_strides.append(strides_t[depth] * step)
+            continue
+
+        # Fancy indexing: materialize from this axis onward.
+        indices = _indices_for(head, shape_t[depth])
+
+        remaining_key = key[depth + 1 :]
+        remaining_shape = shape_t[depth + 1 :]
+        remaining_strides = strides_t[depth + 1 :]
+
+        # Dimensions preserved before the fancy index must
+        # also be preserved in the resulting copy.
+        prefix_shape = tuple(out_shape)
+
+        nested = []
+        for index in indices:
+            sub = _getitem_buffer(
+                buffer,
+                remaining_key,
+                cur_offset + index * strides_t[depth],
+                remaining_shape,
+                remaining_strides,
+            )
+
+            nested.append(sub.tolist() if isinstance(sub, Array) else sub)
+
+        result_shape = (
+            tuple(out_shape)
+            + (len(indices),)
+            + _result_shape(remaining_key, remaining_shape)
+        )
+
+        return Array(
+            values=nested,
+            shape=result_shape,
+        )
+
+    if not out_shape:
+        return buffer[cur_offset]
+
+    return Array(
+        values=buffer,
+        raw=True,
+        shape=tuple(out_shape),
+        strides=tuple(out_strides),
+        offset=cur_offset,
+    )
 
 
 def _getitem(
@@ -103,56 +386,179 @@ def _getitem(
         depth: Current recursion depth, used to normalise the key exactly once.
 
     Returns:
-        Any: A scalar for a single int/slice-with-no-tail selection, or a
-        nested ``list`` mirroring the selected sub-shape.
+        Any: A scalar for a pure int selection, or a nested ``list`` mirroring
+        the selected sub-shape.
 
     Raises:
-        IndexError: If a boolean mask length does not match the dimension.
+        IndexError: If a boolean mask length does not match the dimension, an
+            integer position is out of bounds, or there are too many indices.
         TypeMismatchError: If the leading index entry is not an int, slice,
-            boolean mask or integer list.
+            boolean mask or integer list, or is a boolean scalar.
 
     Example:
         >>> Array([[1, 2], [3, 4]])[0]
         [1, 2]
     """
     key: NormalizedKey = (
-        _normalize_key(array.ndim, _key)
-        if depth == 0
-        else cast("NormalizedKey", _key)
+        _normalize_key(array.ndim, _key) if depth == 0 else cast("NormalizedKey", _key)
     )
 
     target = array.data if target is None else target
 
+    if isinstance(target, Buffer):
+        return _getitem_buffer(
+            target,
+            key,
+            array.offset if depth == 0 else 0,
+            tuple(array.shape),
+            tuple(array.strides),
+        )
+
     if not key:
         return target
 
-    head, *tail = key
 
-    if isinstance(head, (list, tuple)):
-        if all(isinstance(item, bool) for item in head):
-            if len(head) != len(target):
-                raise IndexError("boolean index length mismatch")
-            selected = [item for item, keep in zip(target, head) if keep]
-            if not tail:
-                return selected
-            return [_getitem(array, tuple(tail), item, depth + 1) for item in selected]
+def _assign_view(
+    buffer: Buffer,
+    offset: int,
+    shape: Tuple[int, ...],
+    strides: Tuple[int, ...],
+    value: Any,
+) -> None:
+    """Write ``value`` into a resolved buffer view using strides and broadcasting.
 
-        if all(isinstance(item, int) for item in head):
-            selected = [target[item] for item in head]
-            if not tail:
-                return selected
-            return [_getitem(array, tuple(tail), item, depth + 1) for item in selected]
+    Args:
+        buffer: Flat storage being written.
+        offset: Physical position of the first element of the view.
+        shape: Logical shape of the view (already resolved from the key).
+        strides: Element step per view axis.
+        value: Scalar or nested sequence broadcast following NumPy's
+            trailing-dimension alignment.
 
-    if isinstance(head, int):
-        if not tail:
-            return target[head]
-        return _getitem(array, tuple(tail), target[head], depth + 1)
+    Raises:
+        IndexError: If ``value`` cannot be broadcast to the view.
+    """
+    if not shape:
+        buffer[offset] = _scalar_value(value)
+        return
 
-    if isinstance(head, slice):
-        return [_getitem(array, tuple(tail), item, depth + 1) for item in target[head]]
+    indices = list(range(shape[0]))
+    remaining_dims = len(shape)
 
-    logger.error("unsupported index type", index_type=type(head).__name__)
-    raise TypeMismatchError(f"Unsupported index type: {type(head).__name__}")
+    for index, sub_value in _broadcast_sequence(indices, value, remaining_dims):
+        _assign_view(
+            buffer,
+            offset + index * strides[0],
+            shape[1:],
+            strides[1:],
+            sub_value,
+        )
+
+
+def _assign_fancy(
+    buffer: Buffer,
+    offset: int,
+    prefix_shape: Tuple[int, ...],
+    prefix_strides: Tuple[int, ...],
+    indices: List[int],
+    stride: int,
+    remaining_key: NormalizedKey,
+    remaining_shape: Tuple[int, ...],
+    remaining_strides: Tuple[int, ...],
+    value: Any,
+) -> None:
+    """Write ``value`` through a fancy index, splitting it across any prefix axes.
+
+    Advanced indexing materialises the selection: every position in ``indices``
+    is written individually, recursing over ``remaining_key`` for the trailing
+    dimensions. ``prefix_shape``/``prefix_strides`` describe simple slice axes
+    that were resolved before the fancy index, so the value is first split along
+    those axes to keep broadcasting aligned with the full selection.
+    """
+    if not prefix_shape:
+        remaining_dims = 1 + _selected_dim_count(remaining_key)
+        for index, sub_value in _broadcast_sequence(indices, value, remaining_dims):
+            _assign_buffer(
+                buffer,
+                remaining_key,
+                sub_value,
+                offset + index * stride,
+                remaining_shape,
+                remaining_strides,
+            )
+        return
+
+    remaining_dims = len(prefix_shape) + 1 + _selected_dim_count(remaining_key)
+    for index, sub_value in _broadcast_sequence(
+        list(range(prefix_shape[0])), value, remaining_dims
+    ):
+        _assign_fancy(
+            buffer,
+            offset + index * prefix_strides[0],
+            prefix_shape[1:],
+            prefix_strides[1:],
+            indices,
+            stride,
+            remaining_key,
+            remaining_shape,
+            remaining_strides,
+            sub_value,
+        )
+
+
+def _assign_buffer(
+    buffer: Buffer,
+    key: NormalizedKey,
+    value: Any,
+    offset: int,
+    shape: Tuple[int, ...],
+    strides: Tuple[int, ...],
+) -> None:
+    """Assign ``value`` into flat buffer storage using resolved shape/strides.
+
+    Integer/slice-only indexing resolves to a single strided view and writes
+    the value into it. Fancy indexing materialises the selection and writes
+    each selected position recursively, mirroring ``_getitem_buffer``.
+    """
+    cur_offset = offset
+    out_shape: List[int] = []
+    out_strides: List[int] = []
+
+    for depth, head in enumerate(key):
+        if isinstance(head, bool):
+            raise TypeMismatchError("Boolean scalar indices are not supported")
+
+        if _is_int_index(head):
+            index = _normalize_int(cast(int, head), shape[depth])
+            cur_offset += index * strides[depth]
+            continue
+
+        if isinstance(head, slice):
+            start, stop, step = head.indices(shape[depth])
+            count = len(range(start, stop, step))
+
+            cur_offset += start * strides[depth]
+            out_shape.append(count)
+            out_strides.append(strides[depth] * step)
+            continue
+
+        # Fancy indexing: materialize from this axis onward.
+        indices = _indices_for(head, shape[depth])
+        _assign_fancy(
+            buffer,
+            cur_offset,
+            tuple(out_shape),
+            tuple(out_strides),
+            indices,
+            strides[depth],
+            key[depth + 1 :],
+            tuple(shape[depth + 1 :]),
+            tuple(strides[depth + 1 :]),
+            value,
+        )
+        return
+
+    _assign_view(buffer, cur_offset, tuple(out_shape), tuple(out_strides), value)
 
 
 def _setitem(
@@ -165,6 +571,7 @@ def _setitem(
     """Recursively set values or slices within nested array list data.
 
     Assignments mutate ``array.data`` in place; no new array is produced.
+    Values broadcast following NumPy's trailing-dimension alignment.
 
     Args:
         array: The target ``Array``; provides ``ndim`` and the default target.
@@ -176,7 +583,9 @@ def _setitem(
         depth: Current recursion depth, used to normalise the key exactly once.
 
     Raises:
-        IndexError: If a boolean mask length does not match the dimension.
+        IndexError: If a boolean mask length does not match the dimension, an
+            integer position is out of bounds, assignment would resize the
+            array, or the value cannot be broadcast to the selection.
         TypeMismatchError: If the leading index entry of a list/tuple key holds
             values that are neither all bools nor all ints.
 
@@ -187,60 +596,29 @@ def _setitem(
         [[1, 9], [3, 4]]
     """
     key: NormalizedKey = (
-        _normalize_key(array.ndim, _key)
-        if depth == 0
-        else cast("NormalizedKey", _key)
+        _normalize_key(array.ndim, _key) if depth == 0 else cast("NormalizedKey", _key)
     )
 
     target = array.data if target is None else target
-    value = _coerce_value(value)
+    if depth == 0:
+        value = _coerce_value(value)
 
-    if len(key) == 1:
-        k = key[0]
-        if isinstance(k, slice):
-            if isinstance(value, list):
-                target[k] = value
-            else:
-                target[k] = [value] * len(range(*k.indices(len(target))))
-        else:
-            target[k] = value
+    if isinstance(target, Buffer):
+        _assign_buffer(
+            target,
+            key,
+            value,
+            array.offset if depth == 0 else 0,
+            array.shape,
+            array.strides,
+        )
         return
 
-    head, tail = key[0], key[1:]
+    if not key:
+        if isinstance(value, (list, tuple, Buffer)):
+            raise IndexError("cannot assign a sequence to a 0-d array")
+        array.data = value
+        return
 
-    if isinstance(head, (list, tuple)):
-        if all(isinstance(item, bool) for item in head):
-            if len(head) != len(target):
-                raise IndexError("boolean index length mismatch")
-            selected_indices = [i for i, keep in enumerate(head) if keep]
-            if isinstance(value, list):
-                for idx, val in zip(selected_indices, value):
-                    _setitem(array, tail, val, target[idx], depth + 1)
-            else:
-                for idx in selected_indices:
-                    _setitem(array, tail, value, target[idx], depth + 1)
-        elif all(isinstance(item, int) for item in head):
-            if isinstance(value, list):
-                for idx, val in zip(head, value):
-                    _setitem(array, tail, val, target[idx], depth + 1)
-            else:
-                for idx in head:
-                    _setitem(array, tail, value, target[idx], depth + 1)
-        else:
-            logger.error(
-                "unsupported index type in list/tuple", index_type=type(head).__name__
-            )
-            raise TypeMismatchError(
-                f"Unsupported index type in list/tuple: {type(head).__name__}"
-            )
-    elif isinstance(head, slice):
-        children = target[head]
-        if isinstance(value, list):
-            for i, child in enumerate(children):
-                sub_val = value[i] if i < len(value) else value
-                _setitem(array, tail, sub_val, child, depth + 1)
-        else:
-            for child in children:
-                _setitem(array, tail, value, child, depth + 1)
-    else:
-        _setitem(array, tail, value, target[head], depth + 1)
+    if not isinstance(target, list):
+        raise IndexError("too many indices for array")

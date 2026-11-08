@@ -7,8 +7,8 @@ from typing import Any, Optional, Union
 
 from debug import get_logger
 from debug.errors import ShapeError
-from matlib import broadcasting, linalg
-from matlib import ops as matlib_ops
+from matlib._array import broadcasting, linalg
+from matlib._array import ops as matlib_ops
 from structs.dtypes import BinaryOp, Self
 
 from .protocol import ArrayProtocol
@@ -39,8 +39,18 @@ class ArrayMathOps(ArrayProtocol):
         Raises:
             ShapeError: If the two shapes cannot be broadcast together.
         """
-        other_data = self._unwrap(other)
-        return self.__class__(broadcasting.elementwise(self.data, other_data, op))
+        result = broadcasting.elementwise(self, other, op)
+        if isinstance(result, self.__class__):
+            return result
+        if hasattr(result, "data") and hasattr(result, "shape"):
+            return self.__class__(
+                result.data,
+                raw=True,
+                shape=result.shape,
+                strides=getattr(result, "strides", None),
+                offset=getattr(result, "offset", 0),
+            )
+        return result
 
     def _update_self(self, result: Any) -> Self:
         """Rebuild shape metadata after ``data`` was replaced by a new value.
@@ -50,12 +60,16 @@ class ArrayMathOps(ArrayProtocol):
                 in-place operator such as ``__iadd__``.
 
         Returns:
-            Self: ``self``, after ``data``/``shape``/``ndim`` have been refreshed.
-            Note that ``strides`` is not recomputed.
+            Self: ``self``, after its backing View has been refreshed.
         """
-        self.data = result.data if hasattr(result, "data") else result
-        self.shape = self._get_shape(self.data)
-        self.ndim = len(self.shape)
+        if hasattr(result, "data") and hasattr(result, "shape"):
+            self.data = result.data
+            self.shape = tuple(result.shape)
+            self.strides = tuple(result.strides)
+            self.offset = result.offset
+        else:
+            self.data = result
+            self.shape = self._get_shape(result)
         return self
 
     # ----------------------------------------------------------------- #

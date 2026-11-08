@@ -12,7 +12,7 @@ import random
 from math import sqrt
 from typing import Any, Callable, Dict, Optional, Sequence
 
-from matlib.rng import normal
+from matlib import normal
 from structs import Array
 
 __all__ = [

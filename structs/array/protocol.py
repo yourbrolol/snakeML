@@ -9,9 +9,12 @@ composed class to provide.
 
 from __future__ import annotations
 
-from typing import Any, Iterator, Optional, Protocol, Sequence, Union
+from typing import Any, Iterator, Optional, Protocol, Sequence, Tuple, Union
 
 from structs.dtypes import Axis, IndexKey, NestedList, Self, Shape, Strides
+
+from .buffer import Buffer
+from .view import View
 
 
 class ArrayProtocol(Protocol):
@@ -21,16 +24,22 @@ class ArrayProtocol(Protocol):
     the mixins below; nothing else needs to be implemented.
     """
 
-    #: Nested row-major element storage, one ``list`` level per dimension.
-    data: NestedList
+    #: Flat row-major element storage shared through a :class:`View`.
+    data: Buffer
     #: One ``int`` per dimension, e.g. ``(2, 3)``.
     shape: Shape
     #: Element offset between consecutive entries of each dimension.
     strides: Strides
     #: Flat index of the first element; reserved for future views.
     offset: int
-    #: Number of dimensions, equal to ``len(shape)``.
-    ndim: int
+
+    @property
+    def view(self) -> View:
+        """The Buffer layout descriptor backing this array."""
+
+    @property
+    def ndim(self) -> int:
+        """Number of dimensions, equal to ``len(shape)``."""
 
     def __init__(
         self,
@@ -64,6 +73,30 @@ class ArrayProtocol(Protocol):
 
     def flatten(self) -> Self:
         """Return a flat 1-D copy of the array."""
+
+    def item(self, idx: Optional[int] = None) -> Any:
+        """Return a single flat element, or the sole element when ``idx`` is None."""
+
+    def _restore_from_flat(self, flat: Sequence[Any], shape: Shape) -> NestedList:
+        """Rebuild nested lists from a flat sequence and a target shape."""
+
+    def _from_buffer(self, buffer: Buffer, shape: Shape) -> Self:
+        """Build a new array of ``type(self)`` from a raw Buffer and shape."""
+
+    def _buffer_from(self, values: Any) -> Tuple[Buffer, Shape]:
+        """Convert an Array-like input into a flat Buffer and its Shape."""
+
+    def _to_buffer(self, values: Any) -> Buffer:
+        """Convert an Array-like input into a flat Buffer."""
+
+    def _flat_physical_index(self, index: int) -> int:
+        """Map a C-order logical flat index to its physical Buffer position."""
+
+    def _flat_physical_indices(self) -> Iterator[int]:
+        """Yield physical Buffer positions for every visible element in C order."""
+
+    def copy(self) -> Self:
+        """Return a deep copy of the array."""
 
     # -- indexing ----------------------------------------------------------- #
 

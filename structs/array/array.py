@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any, List, Optional, Union, cast
+from typing import Any, List, Optional, Type, Union, cast
 
 from debug import get_logger
-from matlib import linalg
-from structs.dtypes import IndexKey, NestedList, Shape, Strides
+from structs.dtypes import IndexKey, Shape, Strides
+from .buffer import Buffer
 
 from . import indexing
 from .mixins import ArrayMixins
+from .view import View
 
 logger = get_logger(__name__)
 
@@ -40,11 +41,7 @@ class Array(ArrayMixins):
         ((2, 3), 2, (3, 1))
     """
 
-    data: NestedList
-    shape: Shape
-    strides: Strides
-    offset: int
-    ndim: int
+    _view: View
 
     def __init__(
         self,
@@ -75,17 +72,76 @@ class Array(ArrayMixins):
             TypeError: If ``values`` is not iterable or is a ``str``/``bytes``.
         """
         if raw:
-            self.data = values
-            self.shape = tuple(shape) if shape is not None else self._get_shape(values)
-            self.strides = (
-                tuple(strides) if strides is not None else self._strides(self.shape)
+            if not isinstance(values, Buffer):
+                raise TypeError("raw=True requires a Buffer")
+            self._view = View(
+                values,
+                shape=shape if shape is not None else (),
+                strides=strides,
+                offset=offset,
             )
         else:
-            self.data = self._to_list(values)
-            self.shape = self._get_shape(self.data)
-            self.strides = self._strides(self.shape)
-        self.offset = offset
-        self.ndim = len(self.shape)
+            buffer, resolved_shape = self._buffer_from(values)
+            self._view = View(buffer, shape=resolved_shape, offset=offset)
+
+    @property
+    def view(self) -> View:
+        """The Buffer layout descriptor backing this array."""
+        return self._view
+
+    @property
+    def data(self) -> Buffer:
+        """Flat Buffer storage."""
+        return self._view.buffer
+
+    @data.setter
+    def data(self, value: Any) -> None:
+        if isinstance(value, Buffer):
+            self._view.buffer = value
+            return
+        buffer, inferred_shape = self._buffer_from(value)
+        self._view.buffer = buffer
+        self._view.offset = 0
+        current_size = 1
+        for dim in self._view.shape:
+            current_size *= dim
+        if self.ndim > 0 and len(buffer) == current_size:
+            return
+        self._view.shape = inferred_shape
+        self._view.strides = View.contiguous_strides(inferred_shape)
+
+    @property
+    def shape(self) -> Shape:
+        """Logical shape, one entry per dimension."""
+        return self._view.shape
+
+    @shape.setter
+    def shape(self, value: Shape) -> None:
+        self._view.shape = tuple(value)
+        self._view.strides = View.contiguous_strides(self._view.shape)
+
+    @property
+    def strides(self) -> Strides:
+        """Element offset between consecutive entries per dimension."""
+        return self._view.strides
+
+    @strides.setter
+    def strides(self, value: Strides) -> None:
+        self._view.strides = tuple(value)
+
+    @property
+    def offset(self) -> int:
+        """Physical Buffer position of the first logical element."""
+        return self._view.offset
+
+    @offset.setter
+    def offset(self, value: int) -> None:
+        self._view.offset = value
+
+    @property
+    def ndim(self) -> int:
+        """Number of logical dimensions."""
+        return self._view.ndim
 
     def __len__(self) -> int:
         """Length of the outermost dimension.
@@ -97,7 +153,7 @@ class Array(ArrayMixins):
             TypeError: If called on a 0-d array, whose ``data`` is a bare scalar
                 and therefore has no outer dimension.
         """
-        return len(cast("List[Any]", self.data))
+        return self.shape[0] if self.ndim > 0 else 0
 
     def __iter__(self) -> Iterator[Any]:
         """Iterate over the outermost dimension.
@@ -170,10 +226,10 @@ class Array(ArrayMixins):
         Returns:
             str: Nested bracket form of ``data``, e.g. ``"[[1, 2], [3, 4]]"``.
         """
-        return self._repr(self.data)
+        return self._repr(self.tolist())
 
 
 if __name__ == "__main__":
     a = Array([[1, 2], [3, 4]])
     b = Array([[5, 6], [7, 8]])
-    logger.info("example matmul", result=linalg.matmul(a, b))
+    logger.info("example matmul", result=a.matmul(b))

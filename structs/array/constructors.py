@@ -192,22 +192,6 @@ class ArrayConstructors(ArrayProtocol):
         return cls(build(0))
 
     @classmethod
-    def repeat(cls, value: FillValue, shape: ShapeArg) -> Self:
-        """Creates an Array by repeating a value to fill the shape (alias to ``full``).
-
-        Args:
-            value: Scalar, or a callable producing one value per element.
-            shape: Target shape; an ``int`` means 1-D.
-
-        Returns:
-            ArrayT: A new array of class ``cls``.
-
-        Raises:
-            ValidationError: If ``shape`` has an unsupported type.
-        """
-        return cls.full(shape, value=value)
-
-    @classmethod
     def arange(
         cls,
         start: int,
@@ -273,30 +257,5 @@ class ArrayConstructors(ArrayProtocol):
             return cls([start])
         step = (stop - start) / (num - 1)
         return cls([start + i * step for i in range(num)])
-
-    @classmethod
-    def tile(cls, value: FillValue, reps: ShapeArg) -> Self:
-        """Creates an Array by repeating a value along the specified dimensions.
-
-        Args:
-            value: Scalar, or a callable producing one value per element.
-            reps: Target shape; an ``int`` means 1-D. Longer sequences define
-                higher-rank output.
-
-        Returns:
-            ArrayT: A new array of class ``cls``.
-
-        Raises:
-            ValidationError: If ``reps`` is neither an ``int`` nor a
-                ``tuple``/``list``.
-        """
-        if isinstance(reps, int):
-            reps = (reps,)
-        if not isinstance(reps, (tuple, list)):
-            logger.error("invalid reps type for tile", reps=reps)
-            raise ValidationError("Repetitions must be an int, tuple, or list.")
-
-        return cls.full(reps, value)
-
 
 __all__ = ["ArrayConstructors"]

@@ -6,8 +6,8 @@ import math as _math
 from typing import Any, Optional, Union
 
 from debug import get_logger
-from matlib import ops as matlib_ops
-from matlib import stats as matlib_stats
+from matlib._array import ops as matlib_ops
+from matlib._array import stats as matlib_stats
 from structs.dtypes import Self
 
 from .protocol import ArrayProtocol

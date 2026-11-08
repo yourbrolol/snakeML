@@ -12,8 +12,6 @@ from typing import Any, Iterable, List, Sequence, Tuple, Union
 
 from debug import get_logger
 from debug.errors import ShapeError, ValidationError
-from structs.utils import indices, set_nested, zeroes
-
 logger = get_logger(__name__)
 
 builtins_sum = _builtins.sum
@@ -79,6 +77,8 @@ def concatenate(arrays: Sequence[Any], axis: int = 0) -> Any:
         ShapeError: If array ranks differ or any non-``axis`` dimension
             mismatches across the sequence.
     """
+    from structs.utils import indices, set_nested, zeroes
+
     if not arrays:
         logger.error("concatenate called with empty sequence")
         raise ValidationError("concatenate requires at least one array")
@@ -153,6 +153,8 @@ def flip(array: Any, axis: int) -> Any:
         flip(a, axis=0)   # flip rows
         flip(a, axis=1)   # flip columns
     """
+    from structs.utils import indices, set_nested, zeroes
+
     shape = _get_shape(array)
     ndim = len(shape)
     axis_norm = axis % ndim
@@ -204,6 +206,8 @@ def stack(arrays: Sequence[Any], axis: int = 0) -> Any:
         ValidationError: If ``arrays`` is empty.
         ShapeError: If the arrays' shapes are not identical.
     """
+    from structs.utils import indices, set_nested, zeroes
+
     if not arrays:
         logger.error("stack called with empty sequence")
         raise ValidationError("stack requires at least one array")
@@ -272,6 +276,8 @@ def split(
     ValidationError
         If ``indices_or_sections`` is 0 or negative.
     """
+    from structs.utils import indices, set_nested, zeroes
+
     shape = _get_shape(array)
     ndim = len(shape)
     axis_norm = axis % ndim
@@ -351,6 +357,8 @@ def unbind(array: Any, axis: int = 0) -> List[Any]:
         slices = unbind(a, axis=0)   # → list of 3 arrays, each shape (4,)
         slices = unbind(a, axis=1)   # → list of 4 arrays, each shape (3,)
     """
+    from structs.utils import indices, set_nested, zeroes
+
     shape = _get_shape(array)
     ndim = len(shape)
     axis_norm = axis % ndim
