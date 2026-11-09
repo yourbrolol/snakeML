@@ -1,7 +1,9 @@
 from structs import Array
 
+from .mixins import ValueMixins
 
-class Value:
+
+class Value(ValueMixins):
     def __init__(
         self,
         data,
@@ -36,28 +38,6 @@ class Value:
         for node in reversed(topo):
             if node.requires_grad:
                 node._backward()
-
-    # TODO: To be extended in multiple files
-    def __add__(self, other):
-        out = Value(self.data + other.data, True, (self, other), "+")
-
-        def _backward():
-            self.grad += 1.0 * out.grad
-            other.grad += 1.0 * out.grad
-
-        out._backward = _backward
-        return out
-
-    def __mul__(self, other):
-        other = other if isinstance(other, Value) else Value(other)
-        out = Value(self.data * other.data, True, (self, other), "*")
-
-        def _backward():
-            self.grad += other.data * out.grad
-            other.grad += self.data * out.grad
-
-        out._backward = _backward
-        return out
 
     def __repr__(self) -> str:
         return f"Value(data={self.data})"
