@@ -6,11 +6,12 @@ Every method here is a ``classmethod`` factory returning a new ``Array``.
 from __future__ import annotations
 
 from random import randint, random
-from typing import Any, Optional, Union
+from math import prod
+from typing import Any, Callable, Optional, Union
 
 from debug import get_logger
 from debug.errors import ValidationError
-from structs.dtypes import FillValue, Self, ShapeArg
+from structs.dtypes import FillValue, Self, ShapeArg, Strides
 
 from .protocol import ArrayProtocol
 
@@ -24,7 +25,7 @@ class ArrayConstructors(ArrayProtocol):
     """Mixin providing constructor-style Array methods."""
 
     @classmethod
-    def full(cls, shape: ShapeArg, value: FillValue = 0) -> Self:
+    def full(cls, shape: ShapeArg, value: FillValue | Callable = 0) -> Self:
         """Creates an Array of the given shape filled with a specified value.
 
         Args:
@@ -45,17 +46,15 @@ class ArrayConstructors(ArrayProtocol):
             [[7, 7], [7, 7]]
         """
         if isinstance(shape, int):
-            shape = (shape,)
+            shape = [shape]
         if not isinstance(shape, (tuple, list)):
-            logger.error("invalid shape type for full", shape=shape)
+            logger.error("invalid shape for full", shape=shape)
             raise ValidationError("Shape must be an int, tuple, or list.")
-
-        def build(dim: int) -> Any:
-            if dim == len(shape):
-                return value if not callable(value) else value()
-            return [build(dim + 1) for _ in range(shape[dim])]
-
-        return cls(build(0))
+        if callable(value):
+            return cls(
+                values=[value() for _ in range(prod(shape))], raw=True, shape=shape
+            )
+        return cls(values=[value] * prod(shape), raw=True, shape=shape)
 
     @classmethod
     def eye(cls, size: int, k: int = 0) -> Self:
@@ -81,9 +80,8 @@ class ArrayConstructors(ArrayProtocol):
             logger.error("invalid size for eye", size=size)
             raise ValidationError("Size must be a positive integer.")
 
-        result = [[1 if i == j else 0 for j in range(size)] for i in range(size)]
-
-        return cls(result)
+        values = [1 if (i % size) - (i // size) == k else 0 for i in range(size**2)]
+        return cls(values=values, raw=True, shape=[size, size])
 
     @classmethod
     def zeros(cls, shape: ShapeArg) -> Self:
@@ -146,23 +144,10 @@ class ArrayConstructors(ArrayProtocol):
             ValidationError: If ``shape`` is neither an ``int`` nor a
                 ``tuple``/``list``.
         """
-        if isinstance(shape, int):
-            shape = (shape,)
-        if not isinstance(shape, (tuple, list)):
-            logger.error("invalid shape type for randn", shape=shape)
-            raise ValidationError("Shape must be an int, tuple, or list.")
-
-        def build(dim: int) -> Any:
-            if dim == len(shape):
-                return random()
-            return [build(dim + 1) for _ in range(shape[dim])]
-
-        return cls(build(0))
+        return cls.full(shape, lambda: random())
 
     @classmethod
-    def randint(
-        cls, shape: ShapeArg, low: int = 0, high: int = 10
-    ) -> Self:
+    def randint(cls, shape: ShapeArg, low: int = 0, high: int = 10) -> Self:
         """Creates an Array of the given shape filled with random integers.
 
         Args:
@@ -178,18 +163,7 @@ class ArrayConstructors(ArrayProtocol):
             ValidationError: If ``shape`` is neither an ``int`` nor a
                 ``tuple``/``list``.
         """
-        if isinstance(shape, int):
-            shape = (shape,)
-        if not isinstance(shape, (tuple, list)):
-            logger.error("invalid shape type for randint", shape=shape)
-            raise ValidationError("Shape must be an int, tuple, or list.")
-
-        def build(dim: int) -> Any:
-            if dim == len(shape):
-                return randint(low, high - 1)
-            return [build(dim + 1) for _ in range(shape[dim])]
-
-        return cls(build(0))
+        return cls.full(shape, lambda: randint(low, high))
 
     @classmethod
     def arange(
@@ -257,5 +231,6 @@ class ArrayConstructors(ArrayProtocol):
             return cls([start])
         step = (stop - start) / (num - 1)
         return cls([start + i * step for i in range(num)])
+
 
 __all__ = ["ArrayConstructors"]

@@ -290,6 +290,48 @@ class ArrayTests(unittest.TestCase):
 
 
 
+    def test_eye_constructor(self):
+        identity = Array.eye(3)
+        self.assertEqual(identity.shape, (3, 3))
+        self.assertEqual(
+            identity.tolist(),
+            [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        )
+
+        self.assertEqual(Array.eye(1).tolist(), [[1]])
+        self.assertEqual(Array.eye(2).tolist(), [[1, 0], [0, 1]])
+
+        # k > 0 shifts the diagonal above the main one.
+        self.assertEqual(
+            Array.eye(3, k=1).tolist(),
+            [[0, 1, 0], [0, 0, 1], [0, 0, 0]],
+        )
+        self.assertEqual(
+            Array.eye(3, k=2).tolist(),
+            [[0, 0, 1], [0, 0, 0], [0, 0, 0]],
+        )
+
+        # k < 0 shifts the diagonal below the main one.
+        self.assertEqual(
+            Array.eye(3, k=-1).tolist(),
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+        )
+        self.assertEqual(
+            Array.eye(3, k=-2).tolist(),
+            [[0, 0, 0], [0, 0, 0], [1, 0, 0]],
+        )
+
+        # A diagonal offset beyond the matrix bounds yields all zeros.
+        self.assertEqual(Array.eye(3, k=5).tolist(), [[0, 0, 0]] * 3)
+        self.assertEqual(Array.eye(3, k=-5).tolist(), [[0, 0, 0]] * 3)
+
+        for invalid in (0, -1):
+            with self.assertRaises(ValidationError):
+                Array.eye(invalid)
+
+        with self.assertRaises(ValidationError):
+            Array.eye(2.5)  # type: ignore[arg-type]
+
     def test_view_aliasing(self):
         a = Array([[1, 2, 3], [4, 5, 6]])
         t = a.T

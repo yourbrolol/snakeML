@@ -72,10 +72,10 @@ class Array(ArrayMixins):
             TypeError: If ``values`` is not iterable or is a ``str``/``bytes``.
         """
         if raw:
-            if not isinstance(values, Buffer):
-                raise TypeError("raw=True requires a Buffer")
+            if not isinstance(values, (Buffer, list)):
+                raise TypeError("raw=True requires a Buffer or a list")
             self._view = View(
-                values,
+                values if isinstance(values, Buffer) else Buffer(values),
                 shape=shape if shape is not None else (),
                 strides=strides,
                 offset=offset,
