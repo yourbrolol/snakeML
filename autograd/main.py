@@ -12,8 +12,8 @@ class Value(ValueMixins):
         _op: str = "",
         label: str = "",
     ) -> None:
-        self.data = data
-        self.grad = 0.0
+        self.data = data if isinstance(data, Array) else Array(data)
+        self.grad = Array.zeros(self.data.shape)
         self._backward = lambda: None
         self.requires_grad = requires_grad
         self._prev = set(_children)
@@ -32,9 +32,8 @@ class Value(ValueMixins):
                 topo.append(v)
 
         build_topo(self)
-        print(topo)
 
-        self.grad = 1.0  # base-case
+        self.grad = Array.ones(self.data.shape)
         for node in reversed(topo):
             if node.requires_grad:
                 node._backward()
