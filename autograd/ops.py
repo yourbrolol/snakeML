@@ -315,6 +315,42 @@ class ValueMathOps:
         return out
 
     # ----------------------------------------------------------------- #
+    # Reductions
+    # ----------------------------------------------------------------- #
+
+    def sum(self, axis=None, keepdims=False):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def mean(self, axis=None, keepdims=False):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def max(self, axis=None, keepdims=False):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def argmax(self, axis=None, keepdims=False):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    # ----------------------------------------------------------------- #
+    # Shape
+    # ----------------------------------------------------------------- #
+
+    def reshape(self, *shape):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def transpose(self, *axes):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def squeeze(self, axis=None):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    # ----------------------------------------------------------------- #
     # Linear algebra
     # ----------------------------------------------------------------- #
 
@@ -479,3 +515,23 @@ class ValueMathOps:
 
         out._backward = _backward
         return out
+
+    # ----------------------------------------------------------------- #
+    # Decompositions
+    # ----------------------------------------------------------------- #
+
+    def cholesky(self):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def svd(self):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def qr(self):
+        # TODO: Implement me!
+        raise NotImplementedError
+
+    def eig(self):
+        # TODO: Implement me!
+        raise NotImplementedError
